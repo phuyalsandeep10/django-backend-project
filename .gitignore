@@ -1,2 +1,9 @@
 *.env
 *.sqlite
+__pycache__
+# Ignore Python cache files
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
