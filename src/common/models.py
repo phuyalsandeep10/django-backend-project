@@ -1,40 +1,15 @@
 
 from sqlmodel import SQLModel, Field
 import sqlalchemy as sa
-import datetime
+from datetime import datetime
 
 class CommonModel(SQLModel):
     id: int = Field(default=None, primary_key=True)
     active: bool = Field(default=True, nullable=False)
-
-    created_by_id: int = Field(
-        foreign_key="sys_users.id", 
-        nullable=False
-    )  # Assuming a User model exists with id as primary key
-
-    updated_by_id: int = Field(
-        foreign_key="sys_users.id", 
-        nullable=False
-    )
-
-    
-
-    created_at: datetime = Field(
-        sa_column=sa.Column(
-            sa.DateTime, 
-            default=datetime.utcnow, 
-            nullable=False
-        )
-    )
-    
-    updated_at: datetime = Field(
-        sa_column=sa.Column(
-            sa.DateTime, 
-            default=datetime.utcnow, 
-            onupdate=datetime.utcnow, 
-            nullable=False
-        )
-    )
+    created_by_id: int = Field(foreign_key="sys_users.id", nullable=False)
+    updated_by_id: int = Field(foreign_key="sys_users.id", nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     
 
     # class Config:
@@ -55,7 +30,7 @@ class Permissions(SQLModel,table=True):
     created_at: datetime = Field(
         sa_column=sa.Column(
             sa.DateTime, 
-            default=datetime.utcn
+            default=datetime.utcnow,
     
             nullable=False
         )

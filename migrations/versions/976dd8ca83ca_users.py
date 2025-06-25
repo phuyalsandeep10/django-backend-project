@@ -31,9 +31,11 @@ def upgrade() -> None:
         sa.Column('is_superuser', sa.Boolean, default=False, nullable=False),
         sa.Column('is_staff', sa.Boolean, default=False, nullable=False),
         sa.Column('email_verified_at', sa.DateTime, default=False, nullable=True),
+        sa.Column(
+            'attributes', sa.JSON, nullable=True, default=None
+        ),
         *timestamp_columns()
     )
-    
 
 
 def downgrade() -> None:

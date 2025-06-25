@@ -19,6 +19,7 @@ class User(SQLModel, table=True):
     email_verified_at: datetime = Field(default=None, nullable=True, )
     is_superuser: bool = Field(default=False)
     is_staff: bool = Field(default=False)
+    attributes: Optional[dict] = Field(default=None, sa_column=sa.Column(sa.JSON))
 
 
     created_at: datetime = Field(

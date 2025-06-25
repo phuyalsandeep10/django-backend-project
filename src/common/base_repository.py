@@ -1,7 +1,7 @@
-from typing import TypeVar, Generic, Type, List, Optional, Any
+from typing import TypeVar, Generic, Type, List, Optional, Any, Callable
 from sqlmodel import SQLModel, Session, select
 from fastapi import HTTPException
-
+from sqlalchemy.sql import Select
 
 T = TypeVar("T", bound=SQLModel)
 
@@ -21,10 +21,63 @@ class BaseRepository(Generic[T]):
         obj = self.session.get(self.model, id)
         return obj
 
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[T]:
-        statement = select(self.model).offset(skip).limit(limit)
-        results = self.session.exec(statement).all()
-        return results
+    def get_all(
+        self,
+        filters: Optional[List[Any]] = None,
+        joins: Optional[List[Any]] = None,
+        options: Optional[List[Any]] = None,
+        custom_query_builder: Optional[Callable[[Select], Select]] = None,
+    ) -> List[T]:
+        statement = select(self.model)
+
+        if joins:
+            for join_model in joins:
+                statement = statement.join(join_model)
+
+        if filters:
+            for f in filters:
+                statement = statement.where(f)
+
+        if options:
+            for opt in options:
+                statement = statement.options(opt)
+
+        if custom_query_builder:
+            statement = custom_query_builder(statement)
+
+        return self.session.exec(statement).all()
+    
+    
+
+    def find(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        filters: Optional[List[Any]] = None,
+        joins: Optional[List[Any]] = None,
+        options: Optional[List[Any]] = None,
+        custom_query_builder: Optional[Callable[[Select], Select]] = None,
+    ) -> List[T]:
+        statement = select(self.model)
+
+        if joins:
+            for join_model in joins:
+                statement = statement.join(join_model)
+
+        if filters:
+            for f in filters:
+                statement = statement.where(f)
+
+        if options:
+            for opt in options:
+                statement = statement.options(opt)
+
+        if custom_query_builder:
+            statement = custom_query_builder(statement)
+
+        statement = statement.offset(skip).limit(limit)
+
+        return self.session.exec(statement).all()
     
 
     def update(self, id: int, data: dict) -> T:
