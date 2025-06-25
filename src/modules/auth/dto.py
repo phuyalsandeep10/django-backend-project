@@ -18,6 +18,10 @@ class ForgotPasswordVerifyDto(VerifyEmailTokenDto):
     new_password: str
 
 
+class RefreshTokenDto(BaseModel):
+    token: str # this is the refresh token to be validated
+
+
 
 
 

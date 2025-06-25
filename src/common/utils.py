@@ -21,3 +21,14 @@ def hash_password(password: str) -> str:
     Hash a password using bcrypt.
     """
     return pwd_context.hash(password)
+
+
+def generate_refresh_token(length: int = 32) -> str:
+    """
+    Generate a random refresh token of specified length.
+    The default length is set to 32 characters.
+    """
+    
+    if length < 32:
+        raise ValueError("Token length must be at least 3")
+    return ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=length))

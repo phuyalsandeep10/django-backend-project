@@ -1,26 +1,17 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, EmailStr
-from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 from src.common.dependencies import get_current_user
 from fastapi import Depends
 from src.common.dependencies import create_access_token
-from .dto import LoginDto, RegisterDto, VerifyEmailTokenDto,ForgotPasswordVerifyDto, VerifyEmailDto
-from .models import User, EmailVerification
+from .dto import LoginDto, RegisterDto, VerifyEmailTokenDto,ForgotPasswordVerifyDto, VerifyEmailDto, ResetPasswordDto, RefreshTokenDto
+from .models import User, EmailVerification, RefreshToken
 from src.common.base_repository import BaseRepository
 from src.config.database import get_session, Session
-from src.common.utils import generate_numeric_token, compare_password, hash_password
-from .dto import ResetPasswordDto
+from src.common.utils import generate_numeric_token, compare_password, hash_password, generate_refresh_token
 
 
 router = APIRouter()
-
-
-
-
-
-# Dummy user store (replace with your DB)
 
 
 @router.post("/login")
@@ -28,6 +19,7 @@ def login(request: LoginDto, session: Session = Depends(get_session)):
     user = BaseRepository(User, session).find_one({
         "email": request.email
     })
+
     # Check if user exists
     if not user:
         raise HTTPException(status_code=401, detail="Email not found")
@@ -36,7 +28,61 @@ def login(request: LoginDto, session: Session = Depends(get_session)):
         raise HTTPException(status_code=401, detail="Invalid password")
     
     token = create_access_token({"sub": user.email})
-    return {"access_token": token, "token_type": "Bearer"}
+    refresh_token = generate_refresh_token()
+    BaseRepository(RefreshToken, session).create({
+        "user_id": user.id,
+        "token": refresh_token,
+        "active": True,
+        "created_at": datetime.utcnow(),
+        "expires_at": datetime.utcnow() + timedelta(days=30)
+    })
+    return {"access_token": token, "refresh_token": refresh_token}
+
+
+
+@router.post("/logout")
+def logout(session: Session = Depends(get_session), user=Depends(get_current_user)):
+    # Invalidate the refresh token
+    token_data = BaseRepository(RefreshToken, session).find_one({
+        "user_id": user.id,
+        "active": True
+    })
+    if not token_data:
+        raise HTTPException(status_code=404, detail="No active refresh token found")
+    # Mark the token as inactive
+    BaseRepository(RefreshToken, session).update(token_data.id, {"active": False})
+    return {"message": "Logged out successfully"}
+
+@router.post("/refresh-token")
+def refresh_token(body:RefreshTokenDto, session: Session = Depends(get_session)):
+    # Validate the refresh token
+    token_data = BaseRepository(RefreshToken, session).find_one({
+        "token": body.token,
+        "active": True,
+        
+    })
+    if not token_data:
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+    
+    # Check if the refresh token has expired
+    expires_at = token_data.expires_at
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+
+    # If the token has expired, raise an error
+    if expires_at < datetime.utcnow():
+        raise HTTPException(status_code=401, detail="Refresh token has expired")
+    
+
+    # Create a new access token
+    try:
+        user = BaseRepository(User, session).findById(token_data.user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        access_token = create_access_token({"sub": user.email})
+        return {"access_token": access_token}
+    except jwt.JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 @router.post("/register")
 def register(request: RegisterDto, session: Session = Depends(get_session)):
@@ -44,6 +90,7 @@ def register(request: RegisterDto, session: Session = Depends(get_session)):
     user = repository.find_one({
         "email": request.email
     })
+    # Check if user already exists
 
     if user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -56,7 +103,6 @@ def register(request: RegisterDto, session: Session = Depends(get_session)):
         "password": hashed_password
     
     })
-
 
     token = generate_numeric_token(6)
     # Here you would typically send a verification email
@@ -71,14 +117,14 @@ def register(request: RegisterDto, session: Session = Depends(get_session)):
         }
         
     )
-   
+    
     return {"message": "User registered successfully"}
 
 @router.get("/me")
 def get_auth_user(user=Depends(get_current_user), session: Session = Depends(get_session)):
-    print("user", user)
     try:
         user = BaseRepository(User,session=session).findById(user.id)
+        del user.password  # Remove password from the response
         return user
     except jwt.JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -143,7 +189,7 @@ def forgot_password_request(body: VerifyEmailDto, session: Session = Depends(get
     user = BaseRepository(User, session=session).find_one({
         "email": body.email
     })
-    
+
     # Check if user exists
     if not user:
         raise HTTPException(status_code=404, detail="Email not found")

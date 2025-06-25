@@ -38,6 +38,16 @@ class User(SQLModel, table=True):
         )
     )
 
+
+class RefreshToken(SQLModel, table=True):
+    __tablename__ = "refresh_tokens"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="sys_users.id")
+    token: str = Field(unique=True, index=True)
+    active: bool = Field(default=False)
+    created_at: Optional[str] = None  # Use appropriate datetime type if needed
+    expires_at: Optional[str] = None  # Use appropriate datetime type 
+
 class EmailVerification(SQLModel, table=True):
     __tablename__ = "email_verifications"
     id: Optional[int] = Field(default=None, primary_key=True)
