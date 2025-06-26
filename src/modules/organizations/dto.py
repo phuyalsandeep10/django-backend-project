@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field,EmailStr
+from typing import List
 
 class OrganizationDto(BaseModel):
     name: str = Field(..., max_length=255, description="Name of the organization")
@@ -11,4 +12,11 @@ class OrganizationDto(BaseModel):
 class OrganizationRoleDto(BaseModel):
     name: str = Field(..., max_length=255, description="Name of the role")
     description: str | None = Field(None, max_length=500, description="Description of the role")
-   
+
+
+
+
+class OrganizationInviteDto(BaseModel):
+    email:EmailStr
+    role_ids: List[int]
+    
