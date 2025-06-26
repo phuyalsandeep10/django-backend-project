@@ -74,6 +74,7 @@ def update_user_cache(token: str, user: User):
 def invalidate_user_cache(token: str):
     user_cache.pop(token, None)
 
+    
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))

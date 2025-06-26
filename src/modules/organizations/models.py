@@ -1,6 +1,8 @@
 from src.common.models import CommonModel
-from sqlmodel import  Field, Relationship, SQLModel
+from sqlmodel import  Field, Relationship, SQLModel, Session, select
 from typing import Optional
+from sqlalchemy.orm import joinedload
+from src.config.database import get_session
 
 
 
@@ -12,6 +14,14 @@ class Organization(CommonModel,table=True):
     logo: str = Field(default=None, max_length=255, nullable=True)
     website: str = Field(default=None, max_length=255, nullable=True)
     members: list["OrganizationMember"] = Relationship(back_populates="organization")
+
+
+    @classmethod
+    async def get_orgs_by_user_id(cls, user_id: int):
+        session = get_session()
+        statement = select(cls)
+        return session.exec(statement).all()
+    
 
 
 
