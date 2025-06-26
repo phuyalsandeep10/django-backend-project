@@ -19,4 +19,7 @@ class OrganizationRoleDto(BaseModel):
 class OrganizationInviteDto(BaseModel):
     email:EmailStr
     role_ids: List[int]
-    
+
+class OrganizationInvitationApproveDto(BaseModel):
+    email:EmailStr
+    token:str 

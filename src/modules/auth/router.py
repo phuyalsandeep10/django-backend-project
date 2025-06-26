@@ -9,6 +9,7 @@ from .models import User, EmailVerification, RefreshToken
 from src.common.base_repository import BaseRepository
 from src.config.database import get_session, Session
 from src.common.utils import generate_numeric_token, compare_password, hash_password, generate_refresh_token
+from src.modules.organizations.models import OrganizationInvitation
 
 
 router = APIRouter()
@@ -145,7 +146,9 @@ def verify_email_token(body:VerifyEmailTokenDto, session: Session = Depends(get_
     
     
     verification_repo = BaseRepository(EmailVerification, session)
+    print(body.token)
     verification = verification_repo.find_one({"token": body.token, "is_used": False,"user_id":user.id})
+    
 
     if not verification:
         raise HTTPException(status_code=400, detail="Invalid or expired verification token")
@@ -249,3 +252,8 @@ def forgot_password_verify(body:ForgotPasswordVerifyDto, session: Session = Depe
 
 
 
+@router.get('/invitations')
+def get_invitations(user=Depends(get_current_user)):
+    return OrganizationInvitation.filter(where={
+        "email":user.email
+    })

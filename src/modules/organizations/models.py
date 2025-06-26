@@ -54,7 +54,6 @@ class OrganizationInvitation(CommonModel, table=True):
     organization_id: int = Field(foreign_key="sys_organizations.id", nullable=False)
     
     invited_by_id: int = Field(foreign_key="sys_users.id", nullable=False)
-    token: str = Field(max_length=255, nullable=False, unique=True)
     status: str = Field(default="pending", max_length=50, nullable=False)
 
     role_ids: list[int] = Field(default_factory=list, sa_column=sa.Column(sa.JSON))
