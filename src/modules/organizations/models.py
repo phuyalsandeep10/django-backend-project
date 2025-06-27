@@ -4,6 +4,7 @@ from typing import Optional,List
 from sqlalchemy.orm import joinedload
 from src.config.database import engine
 import sqlalchemy as sa
+from src.modules.auth.models import User
 
 
 
@@ -30,6 +31,9 @@ class OrganizationRole(CommonModel, table=True):
     identifier: str = Field(default=None, max_length=500, nullable=False, index=True)
     organization_id: int = Field(foreign_key="sys_organizations.id", nullable=False)
 
+    member_roles:list["OrganizationMemberRole"] = Relationship(back_populates="role")
+
+
 
 class OrganizationMember(CommonModel, table=True):
     __tablename__ = "sys_organization_members"
@@ -38,12 +42,20 @@ class OrganizationMember(CommonModel, table=True):
     
     is_owner: bool = Field(default=False)
     organization: Optional[Organization] = Relationship(back_populates="members")
+    user: Optional["User"] = Relationship(
+        back_populates="members",
+        sa_relationship_kwargs={"foreign_keys": "[OrganizationMember.user_id]"}
+    )
+    member_roles: list["OrganizationMemberRole"] = Relationship(
+        back_populates="member"
+    )
 
 class OrganizationMemberRole(CommonModel, table=True):
     __tablename__ = "sys_organization_member_roles"
     member_id: int = Field(foreign_key="sys_organization_members.id", nullable=False)
     role_id: int = Field(foreign_key="sys_organization_roles.id", nullable=False)
-    organization_id: int = Field(foreign_key="sys_organizations.id", nullable=False)
+    member:Optional[OrganizationMember] = Relationship(back_populates="member_roles")
+    role: Optional[OrganizationRole] = Relationship(back_populates="member_roles")
 
 
 
@@ -57,6 +69,11 @@ class OrganizationInvitation(CommonModel, table=True):
     status: str = Field(default="pending", max_length=50, nullable=False)
 
     role_ids: list[int] = Field(default_factory=list, sa_column=sa.Column(sa.JSON))
+
+    invited_by: Optional["User"] = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[OrganizationInvitation.invited_by_id]"}
+    )
+
 
   # e.g., pending, accepted, declined
 

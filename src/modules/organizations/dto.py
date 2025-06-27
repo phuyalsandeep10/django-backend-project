@@ -23,3 +23,8 @@ class OrganizationInviteDto(BaseModel):
 class OrganizationInvitationApproveDto(BaseModel):
     email:EmailStr
     token:str 
+
+
+class AssignRoleDto(BaseModel):
+    user_id:int
+    role_id:int

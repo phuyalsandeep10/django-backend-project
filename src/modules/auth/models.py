@@ -1,15 +1,16 @@
 
 from typing import Optional
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field,Relationship
 from datetime import datetime
 import sqlalchemy as sa
+from src.common.models import BaseModel
 
 
 
 
-class User(SQLModel, table=True):
+
+class User(BaseModel, table=True):
     __tablename__ = "sys_users"
-    id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(unique=True, index=True)
     name: Optional[str] = None
     image: Optional[str] = None
@@ -21,41 +22,29 @@ class User(SQLModel, table=True):
     is_staff: bool = Field(default=False)
     attributes: Optional[dict] = Field(default=None, sa_column=sa.Column(sa.JSON))
 
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    created_at: datetime = Field(
-        sa_column=sa.Column(
-            sa.DateTime, 
-            default=datetime.utcnow, 
-            nullable=False
-        )
-    )
-
-    updated_at: datetime = Field(
-        sa_column=sa.Column(
-            sa.DateTime, 
-            default=datetime.utcnow, 
-            onupdate=datetime.utcnow, 
-            nullable=False
-        )
+    members: list["OrganizationMember"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"foreign_keys": "[OrganizationMember.user_id]"}
     )
 
 
-class RefreshToken(SQLModel, table=True):
+class RefreshToken(BaseModel, table=True):
     __tablename__ = "refresh_tokens"
-    id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="sys_users.id")
     token: str = Field(unique=True, index=True)
     active: bool = Field(default=False)
-    created_at: Optional[str] = None  # Use appropriate datetime type if needed
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     expires_at: Optional[str] = None  # Use appropriate datetime type 
 
-class EmailVerification(SQLModel, table=True):
+class EmailVerification(BaseModel, table=True):
     __tablename__ = "email_verifications"
-    id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="sys_users.id")
     token: str = Field(unique=True, index=True)
     is_used: bool = Field(default=False)
-    created_at: Optional[str] = None  # Use appropriate datetime type if needed
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     expires_at: Optional[str] = None  # Use appropriate datetime type if needed
     type:str = Field(default="email_verification")
 

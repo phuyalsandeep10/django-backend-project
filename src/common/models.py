@@ -24,16 +24,8 @@ def case_insensitive(attributes):
         return wrapper
     return decorator
 
-
-class CommonModel(SQLModel):
+class BaseModel(SQLModel):
     id: int = Field(default=None, primary_key=True)
-    active: bool = Field(default=True, nullable=False)
-    created_by_id: int = Field(foreign_key="sys_users.id", nullable=False)
-    updated_by_id: int = Field(foreign_key="sys_users.id", nullable=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
-    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
-
-
     @classmethod
     def get(cls: Type[T], id: int) -> T:
         with Session(engine) as session:
@@ -111,13 +103,14 @@ class CommonModel(SQLModel):
         with Session(engine) as session:
             result = session.exec(statement).first()
             return result if result else None
-        
 
-        
-    
+class CommonModel(BaseModel):
+    active: bool = Field(default=True, nullable=False)
+    created_by_id: int = Field(foreign_key="sys_users.id", nullable=False)
+    updated_by_id: int = Field(foreign_key="sys_users.id", nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    class Config:
-        orm_mode = True
         # arbitrary_types_allowed = True
 
 def query_statement(cls: Type[T],
@@ -210,15 +203,11 @@ def parse_where(cls,where_dict):
     return and_(*expressions) if expressions else None
 
 
-class Permissions(SQLModel,table=True):
+class Permissions(BaseModel,table=True):
     __tablename__ = "sys_permissions"
-    
-    id: int = Field(default=None, primary_key=True)
     name: str = Field(max_length=255, nullable=False, index=True)
     identifier: str = Field(max_length=255, nullable=False, unique=True, index=True)
-
     description: str = Field(default=None, max_length=500, nullable=True)
-
     created_at: datetime = Field(
         sa_column=sa.Column(
             sa.DateTime, 

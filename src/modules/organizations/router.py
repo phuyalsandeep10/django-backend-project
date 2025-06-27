@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from src.common.dependencies import get_current_user,get_bearer_token,update_user_cache
 from src.config.database import get_session, Session
-from .dto import OrganizationDto, OrganizationRoleDto, OrganizationInviteDto, OrganizationInvitationApproveDto
-from src.common.base_repository import BaseRepository
-from .models import Organization, OrganizationMember, OrganizationRole, OrganizationInvitation
+from .dto import OrganizationDto, OrganizationRoleDto, OrganizationInviteDto 
+
+from .models import Organization, OrganizationMember, OrganizationRole, OrganizationInvitation, OrganizationMemberRole
 from src.modules.auth.models import User
+from src.modules.organizations.dto import AssignRoleDto
 
 router = APIRouter()
 
@@ -16,7 +17,7 @@ async def get_organizations(user=Depends(get_current_user),session: Session = De
     return Organization.get_orgs_by_user_id(user_id=user.id)
 
 @router.post("")
-def create_organization(body:OrganizationDto, user=Depends(get_current_user), session:Session = Depends(get_session),token:str=Depends(get_bearer_token)):
+def create_organization(body:OrganizationDto, user=Depends(get_current_user),token:str=Depends(get_bearer_token)):
     """
     Create a new organization.
     """
@@ -43,36 +44,65 @@ def create_organization(body:OrganizationDto, user=Depends(get_current_user), se
     )
 
     OrganizationMember.create(organization_id=organization.id,user_id=user.id,is_owner=True)
+    user_attributes = user.attributes
 
+    if not user_attributes:
+        user_attributes = {}
 
-    if user.attributes and  'organization_id' not in user.attributes:
-        user_repo = BaseRepository(User, session=session)
-        user = user_repo.update(user.id, {"attributes": {"organization_id": organization.id}})
+    if 'organization_id' not in user_attributes:
+       
+
+        user = User.update(user.id,
+                       attributes={
+                           "organization_id":organization.id
+                       })
+
 
         update_user_cache(token, user)
+        
 
 
     
     return organization
 
 
+@router.get('/{organization_id}/members')
+def get_members(user=Depends(get_current_user)):
+    organization_id = user.attributes.get('organization_id')
+    members = OrganizationMember.filter({
+        "organization_id": organization_id,
+    })
+
+    # For each member, fetch their roles
+    result = []
+    for member in members:
+        # Get all member_role entries for this member
+        member_roles = OrganizationMemberRole.filter({
+            "member_id": member.id
+        })
+        # Get role names
+        roles = []
+        for mr in member_roles:
+            role = OrganizationRole.get(mr.role_id)
+            if role:
+                roles.append({"id": role.id, "name": role.name})
+        # Add roles to member dict
+        member_dict = member.dict() if hasattr(member, "dict") else dict(member)
+        member_dict["roles"] = roles
+        result.append(member_dict)
+    return result
+
 @router.put("/{organization_id}")
 def update_organization(organization_id: int, body: OrganizationDto, user=Depends(get_current_user), session: Session = Depends(get_session)):
     """
     Update an existing organization.
     """
+    organization = Organization.get(organization_id)
 
-
-
-    organization_repo = BaseRepository(Organization, session=session)
-    organization = organization_repo.findById(organization_id)
-    organization_member_repo = BaseRepository(OrganizationMember, session=session)
-    organization_member = organization_member_repo.find_one({
+    organization_member = OrganizationMember.find_one({
         "organization_id": organization_id,
         "user_id": user.id
     })
-
-
 
     if not organization_member:
         raise HTTPException(status_code=403, detail="You do not have permission to update this organization")
@@ -81,17 +111,21 @@ def update_organization(organization_id: int, body: OrganizationDto, user=Depend
         raise HTTPException(status_code=404, detail="Organization not found")
 
     if organization.name != body.name:
-        existing_org = organization_repo.find_one({"name": body.name})
+        existing_org = Organization.find_one({"name": {
+            "value":body.name,
+            "mode":"insensitive"
+        }})
         if existing_org:
             raise HTTPException(status_code=400, detail="Organization with this name already exists")
 
-    record = organization_repo.update(organization_id, {
-        "name": body.name,
-        "description": body.description,
-        "slug": body.name.lower().replace(" ", "-"),  # Simple slug generation
-        "logo": body.logo,
-        "website": body.website
-    })
+    record = Organization.update(
+        organization_id, 
+        name= body.name,
+        description= body.description,
+        slug=body.name.lower().replace(" ", "-"),  # Simple slug generation
+        logo= body.logo,
+        website= body.website
+    )
 
     return record
 
@@ -102,14 +136,19 @@ def update_organization(organization_id: int, body: OrganizationDto, user=Depend
 
 
 @router.put("/{organization_id}/set")
-def set_organization(organization_id: int, user=Depends(get_current_user),token:str=Depends(get_bearer_token), session: Session = Depends(get_session)):
+def set_organization(organization_id: int, user=Depends(get_current_user),token:str=Depends(get_bearer_token)):
     """
     Set an existing organization.
     """
-    organization_repo = BaseRepository(Organization, session=session)
-    organization = organization_repo.findById(organization_id)
 
-    user = BaseRepository(User, session=session).update(user.id,{"attributes":{"organization_id":organization_id}})
+    organization = Organization.get(organization_id)
+
+    user = User.update(user.id,
+                       attributes={
+                           "organization_id":organization_id
+                       })
+
+ 
 
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -120,10 +159,12 @@ def set_organization(organization_id: int, user=Depends(get_current_user),token:
 
 
 @router.post('/roles')
-def create_role(body: OrganizationRoleDto, user=Depends(get_current_user), session: Session = Depends(get_session)):
+def create_role(body: OrganizationRoleDto, user=Depends(get_current_user)):
     """
     Create a new role for an organization.
     """
+
+    print("user",user)
 
     organization_id = user.attributes.get("organization_id")
     record = OrganizationRole.find_one(
@@ -171,24 +212,21 @@ def update_role(role_id:int,body:OrganizationRoleDto,user=Depends(get_current_us
     
 
 
-    role_repo = BaseRepository(OrganizationRole, session=session)
 
-    role = role_repo.findById(role_id)
+
+    role = OrganizationRole.get(role_id)
 
     if not role or role.organization_id != organization_id:
         raise HTTPException(status_code=404, detail="Role not found in your organization")
     
 
 
-    role = role_repo.update(role.id,{
-        "name": body.name,
-        "description": body.description,
-    })
+    role = OrganizationRole.update(role.id,name=body.name, description=body.description)
 
     return role
 
 @router.get('/roles')
-def get_roles(user=Depends(get_current_user), session: Session = Depends(get_session)):
+def get_roles(user=Depends(get_current_user)):
     """
     Get all roles for the user's organization.
     """
@@ -207,14 +245,13 @@ def delete_role(role_id: int, user=Depends(get_current_user), session: Session =
     """
     organization_id = user.attributes.get("organization_id")
 
-    role_repo = BaseRepository(OrganizationRole, session=session)
-    
-    role = role_repo.findById(role_id)
+
+    role = OrganizationRole.get(role_id)
 
     if not role or role.organization_id != organization_id:
         raise HTTPException(status_code=404, detail="Role not found in your organization")
 
-    role_repo.delete(role_id)
+    OrganizationRole.delete(role_id)
     
     return {"message": "Role deleted successfully"}
 
@@ -227,6 +264,7 @@ def invite_user(body:OrganizationInviteDto, user=Depends(get_current_user)):
         "email":body.email,
         "status":"pending"
     })
+
     organization_id = user.attributes.get('organization_id')
 
     if record:
@@ -251,8 +289,6 @@ def get_invitations(user=Depends(get_current_user)):
     })
 
 
-
-
 @router.post('/invitation/{invitation_id}/reject')
 def reject_invitation(invitation_id:int,user=Depends(get_current_user)):
     invitation = OrganizationInvitation.get(invitation_id)
@@ -260,8 +296,7 @@ def reject_invitation(invitation_id:int,user=Depends(get_current_user)):
     if not invitation:
         raise HTTPException(404,"Not found")
     
-    return OrganizationInvitation.update(invitation.id,status='rejected')
-    
+    return OrganizationInvitation.update(invitation.id,status='rejected') 
 @router.post('/invitation/{invitation_id}/accept')
 def accept_invitation(invitation_id:int,user=Depends(get_current_user),session=Depends(get_session)):
 
@@ -269,17 +304,73 @@ def accept_invitation(invitation_id:int,user=Depends(get_current_user),session=D
 
     if user.email !=invitation.email:
         raise HTTPException(403,"Don't have authorization")
-
-
     
     if not invitation:
         raise HTTPException(404,"Not found")
     
     OrganizationInvitation.update(invitation.id,status='accepted')
 
-    BaseRepository(User,session=session)
+
+    member = OrganizationMember.find_one({
+        "organization_id":invitation.organization_id,
+        "user_id":user.id
+    })
+
+    if not member:
+        member = OrganizationMember.create(organization_id=invitation.organization_id,user_id=user.id)
+
+
 
     for role_id in invitation.role_ids:
-        OrganizationMember.create(role_id=role_id,user_id=user.id,organization_id=invitation.organization_id)
+        OrganizationMemberRole.create(role_id=role_id,member_id=member.id)
     
     return {"message":"Successfully approved"}
+
+@router.post('/roles-assign')
+def assign_role(body:AssignRoleDto, user=Depends(get_current_user)):
+
+    organization_id = user.attributes.get('organization_id')
+    member = OrganizationMember.find_one(where={
+        "organization_id":organization_id,
+        "user_id":body.user_id
+    })
+
+    if not member:
+        raise HTTPException(400,"Organization Member not found")
+
+    member_role = OrganizationMemberRole.find_one(where={
+        "member_id":member.id,
+        "role_id":body.role_id
+    })
+
+    if not member_role:
+        OrganizationMemberRole.create(role_id=body.role_id,member_id=member.id)
+
+    return {"message":"Successfully assign"}
+
+@router.post('/remove-assign-role')
+def remove_assign_role(body:AssignRoleDto,user=Depends(get_current_user)):
+    organization_id = user.attributes.get('organization_id')
+
+    member = OrganizationMember.find_one(where={
+        "organization_id":organization_id,
+        "user_id":body.user_id
+    })
+
+    if not member:
+        raise HTTPException(400,"Organization Member not found")
+    
+    member_role = OrganizationMemberRole.find_one({
+        "member_id":member.id,
+        "role_id":body.role_id
+    })
+
+    if not member_role:
+        raise HTTPException(400,'Role not found')
+    
+    OrganizationMemberRole.delete(member_role.id)
+    return {"message":"Successfully remove role"}
+
+
+
+
