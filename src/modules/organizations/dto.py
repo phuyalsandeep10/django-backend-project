@@ -9,9 +9,16 @@ class OrganizationDto(BaseModel):
     website: str | None = Field(None, max_length=255, description="Website URL for the organization")
 
 
+
 class OrganizationRoleDto(BaseModel):
     name: str = Field(..., max_length=255, description="Name of the role")
     description: str | None = Field(None, max_length=500, description="Description of the role")
+    permissions:list[str] = Field([])
+
+
+class PermissionDto(BaseModel):
+    name:str = Field(...,max_length=255)
+    description:str | None = Field(None,max_length=250)
 
 
 
@@ -22,9 +29,13 @@ class OrganizationInviteDto(BaseModel):
 
 class OrganizationInvitationApproveDto(BaseModel):
     email:EmailStr
-    token:str 
+    token:str
+
 
 
 class AssignRoleDto(BaseModel):
     user_id:int
     role_id:int
+
+class AssignPermissionDto(BaseModel):
+    permission_ids:List[int]

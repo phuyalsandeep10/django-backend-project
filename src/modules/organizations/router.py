@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from src.common.dependencies import get_current_user,get_bearer_token,update_user_cache
 from src.config.database import get_session, Session
-from .dto import OrganizationDto, OrganizationRoleDto, OrganizationInviteDto 
+from .dto import OrganizationDto, OrganizationRoleDto, OrganizationInviteDto , PermissionDto, AssignPermissionDto
 
 from .models import Organization, OrganizationMember, OrganizationRole, OrganizationInvitation, OrganizationMemberRole
 from src.modules.auth.models import User
 from src.modules.organizations.dto import AssignRoleDto
+from src.common.models import Permission
+
 
 router = APIRouter()
 
@@ -162,9 +164,7 @@ def set_organization(organization_id: int, user=Depends(get_current_user),token:
 def create_role(body: OrganizationRoleDto, user=Depends(get_current_user)):
     """
     Create a new role for an organization.
-    """
-
-    print("user",user)
+    """ 
 
     organization_id = user.attributes.get("organization_id")
     record = OrganizationRole.find_one(
@@ -181,11 +181,19 @@ def create_role(body: OrganizationRoleDto, user=Depends(get_current_user)):
     if record:
         raise HTTPException(400,"Duplicate record")
     
+    permissions = []
+    if body.permissions:
+        permissions = list(set(body.permissions))
+
+        
+
+    
     return OrganizationRole.create(
         name=body.name,
         organization_id=organization_id,
         identifier=body.name.lower().replace(' ','-'),
-        description=body.description
+        description=body.description,
+        permissions=permissions
         )
 
 @router.put('/roles/{role_id}')
@@ -211,17 +219,18 @@ def update_role(role_id:int,body:OrganizationRoleDto,user=Depends(get_current_us
         raise HTTPException(status_code=400,detail="Bad request")
     
 
-
-
-
     role = OrganizationRole.get(role_id)
 
     if not role or role.organization_id != organization_id:
         raise HTTPException(status_code=404, detail="Role not found in your organization")
     
 
+    permissions = []
+    if body.permissions:
+        permissions = list(set(body.permissions))
 
-    role = OrganizationRole.update(role.id,name=body.name, description=body.description)
+
+    role = OrganizationRole.update(role.id,name=body.name,permissions=permissions, description=body.description)
 
     return role
 
@@ -348,6 +357,9 @@ def assign_role(body:AssignRoleDto, user=Depends(get_current_user)):
 
     return {"message":"Successfully assign"}
 
+# @router.post('/roles/{role_id}/assign-permissions')
+
+
 @router.post('/remove-assign-role')
 def remove_assign_role(body:AssignRoleDto,user=Depends(get_current_user)):
     organization_id = user.attributes.get('organization_id')
@@ -366,11 +378,42 @@ def remove_assign_role(body:AssignRoleDto,user=Depends(get_current_user)):
     })
 
     if not member_role:
-        raise HTTPException(400,'Role not found')
-    
+        raise HTTPException(400,'Role not found') 
     OrganizationMemberRole.delete(member_role.id)
     return {"message":"Successfully remove role"}
 
 
+@router.get('/permissions')
+def get_permissions():
+    return Permission.filter()
 
+
+@router.post("/permissions")
+def create_permissions(body:PermissionDto):
+    record = Permission.find_one({
+        "name":{
+            "mode":"insensitive",
+            "value":body.name
+        },
+    })
+
+    if record:
+        raise HTTPException(400,"Duplicate Name")
+    
+    return Permission.create(
+        name=body.name,
+        identifier=body.name.lower().replace(' ','-'),
+        description=body.description
+    ) 
+
+
+@router.put('/permissions/{permission_id}')
+def update_permission(permission_id:int,body:PermissionDto):
+    record = Permission.get(permission_id)
+
+    if not record:
+        raise HTTPException(404,"Don't found")
+    
+    return Permission.update(name=body.name,description=body.description)
+    
 

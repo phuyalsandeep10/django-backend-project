@@ -30,8 +30,6 @@ def upgrade() -> None:
         sa.Column("slug", sa.String(255), nullable=False, unique=True, index=True),
         sa.Column("logo", sa.String(255), nullable=True, default=None),
         sa.Column("website", sa.String(255), nullable=True, default=None),
-       
-
 ) 
 def downgrade() -> None:
     """Downgrade schema."""

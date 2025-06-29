@@ -29,6 +29,9 @@ def upgrade() -> None:
     sa.Column('name',sa.String(255), nullable=False),
     sa.Column('description',sa.String(500),nullable=True),
     sa.Column('identifier',sa.String(255),nullable=False),
+    sa.Column(
+            'permissions', sa.JSON, nullable=True, default=[]
+        ),
     )
 
 

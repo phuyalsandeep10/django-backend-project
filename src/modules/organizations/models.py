@@ -30,6 +30,7 @@ class OrganizationRole(CommonModel, table=True):
     description: str = Field(default=None, max_length=500, nullable=True)
     identifier: str = Field(default=None, max_length=500, nullable=False, index=True)
     organization_id: int = Field(foreign_key="sys_organizations.id", nullable=False)
+    permissions: list[str] = Field(default=[], sa_column=sa.Column(sa.JSON))
 
     member_roles:list["OrganizationMemberRole"] = Relationship(back_populates="role")
 
@@ -46,9 +47,11 @@ class OrganizationMember(CommonModel, table=True):
         back_populates="members",
         sa_relationship_kwargs={"foreign_keys": "[OrganizationMember.user_id]"}
     )
+
     member_roles: list["OrganizationMemberRole"] = Relationship(
         back_populates="member"
     )
+
 
 class OrganizationMemberRole(CommonModel, table=True):
     __tablename__ = "sys_organization_member_roles"
@@ -56,9 +59,6 @@ class OrganizationMemberRole(CommonModel, table=True):
     role_id: int = Field(foreign_key="sys_organization_roles.id", nullable=False)
     member:Optional[OrganizationMember] = Relationship(back_populates="member_roles")
     role: Optional[OrganizationRole] = Relationship(back_populates="member_roles")
-
-
-
 
 class OrganizationInvitation(CommonModel, table=True):
     __tablename__ = "sys_organization_invitations"
@@ -78,13 +78,6 @@ class OrganizationInvitation(CommonModel, table=True):
   # e.g., pending, accepted, declined
 
 
-
-class OrganizationSettings(CommonModel, table=True):
-    __tablename__ = "sys_organization_settings"
-    organization_id: int = Field(foreign_key="sys_organizations.id", nullable=False)
-    key: str = Field(max_length=255, index=True)
-    value: str = Field(max_length=500, nullable=True)
-    description: str = Field(default=None, max_length=500, nullable=True)
 
 
 

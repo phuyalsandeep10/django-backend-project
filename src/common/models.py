@@ -203,25 +203,10 @@ def parse_where(cls,where_dict):
     return and_(*expressions) if expressions else None
 
 
-class Permissions(BaseModel,table=True):
+class Permission(BaseModel,table=True):
     __tablename__ = "sys_permissions"
     name: str = Field(max_length=255, nullable=False, index=True)
     identifier: str = Field(max_length=255, nullable=False, unique=True, index=True)
     description: str = Field(default=None, max_length=500, nullable=True)
-    created_at: datetime = Field(
-        sa_column=sa.Column(
-            sa.DateTime, 
-            default=datetime.utcnow,
-    
-            nullable=False
-        )
-    )
-    
-    updated_at: datetime = Field(
-        sa_column=sa.Column(
-            sa.DateTime, 
-            default=datetime.utcnow, 
-            onupdate=datetime.utcnow, 
-            nullable=False
-        )
-    )
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
