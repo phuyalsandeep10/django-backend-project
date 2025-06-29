@@ -35,7 +35,6 @@ class OrganizationRole(CommonModel, table=True):
     member_roles:list["OrganizationMemberRole"] = Relationship(back_populates="role")
 
 
-
 class OrganizationMember(CommonModel, table=True):
     __tablename__ = "sys_organization_members"
     user_id: int = Field(foreign_key="sys_users.id", nullable=False)

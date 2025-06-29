@@ -27,11 +27,9 @@ def upgrade() -> None:
         sa.Column('id', sa.Integer, primary_key=True),
         sa.Column('name',sa.String(250),nullable=False,unique=True),
         sa.Column('identifier',sa.String(250), nullable=False,unique=True),
-        sa.Column('description',sa.String(250), nullable=True, unique=True),
+        sa.Column('description',sa.String(250), nullable=True),
         sa.Column('created_at', sa.DateTime, nullable=False, server_default=sa.func.now()),
-        
     )
-    pass
 
 
 def downgrade() -> None:

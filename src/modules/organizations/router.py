@@ -298,6 +298,7 @@ def get_invitations(user=Depends(get_current_user)):
     })
 
 
+
 @router.post('/invitation/{invitation_id}/reject')
 def reject_invitation(invitation_id:int,user=Depends(get_current_user)):
     invitation = OrganizationInvitation.get(invitation_id)
@@ -379,41 +380,14 @@ def remove_assign_role(body:AssignRoleDto,user=Depends(get_current_user)):
 
     if not member_role:
         raise HTTPException(400,'Role not found') 
+    
     OrganizationMemberRole.delete(member_role.id)
     return {"message":"Successfully remove role"}
 
 
 @router.get('/permissions')
-def get_permissions():
+def get_permissions(user=Depends(get_current_user)):
     return Permission.filter()
 
 
-@router.post("/permissions")
-def create_permissions(body:PermissionDto):
-    record = Permission.find_one({
-        "name":{
-            "mode":"insensitive",
-            "value":body.name
-        },
-    })
-
-    if record:
-        raise HTTPException(400,"Duplicate Name")
-    
-    return Permission.create(
-        name=body.name,
-        identifier=body.name.lower().replace(' ','-'),
-        description=body.description
-    ) 
-
-
-@router.put('/permissions/{permission_id}')
-def update_permission(permission_id:int,body:PermissionDto):
-    record = Permission.get(permission_id)
-
-    if not record:
-        raise HTTPException(404,"Don't found")
-    
-    return Permission.update(name=body.name,description=body.description)
-    
 
