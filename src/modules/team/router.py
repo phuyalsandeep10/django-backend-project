@@ -77,7 +77,6 @@ def assign_team_member(team_id: int, body: TeamMemberDto, user=Depends(get_curre
     if not team:
         raise HTTPException(404, "Team not found")
 
-    organization_id = user.attributes.get("organization_id")
 
     # Step 1: Get current members in the team
     current_members = TeamMember.filter(where={"team_id": team_id})
@@ -105,7 +104,6 @@ def assign_team_member(team_id: int, body: TeamMemberDto, user=Depends(get_curre
 
     return {"message": "Team members updated successfully"}
 
-
 @router.get('/{team_id}/team-members')
 def get_team_members(team_id:int):
 
@@ -113,6 +111,7 @@ def get_team_members(team_id:int):
         "team_id":team_id
     },
     options=[selectinload(TeamMember.user)])
+
 
     return [
         {
