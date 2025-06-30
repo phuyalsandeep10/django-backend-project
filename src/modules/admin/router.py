@@ -53,6 +53,7 @@ def update_permission(permission_id:int,body:PermissionDto, user=Depends(is_supe
         },
     })
 
+
     if record and  record.id !=existing_record.id:
         raise HTTPException(400,"Duplicate Name")
 
@@ -71,3 +72,5 @@ def update_permission(permission_id:int,body:PermissionDto, user=Depends(is_supe
     
     return Permission.update(permission_id,name=body.name,description=body.description,identifier=body.identifier)
     
+
+

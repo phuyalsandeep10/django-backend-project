@@ -30,7 +30,6 @@ class BaseModel(SQLModel):
     def get(cls: Type[T], id: int) -> T:
         with Session(engine) as session:
             return session.get(cls, id)
-
     
 
     @classmethod
