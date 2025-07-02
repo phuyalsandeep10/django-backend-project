@@ -11,22 +11,11 @@ from src.config.database import get_session, Session
 from src.common.utils import generate_numeric_token, compare_password, hash_password, generate_refresh_token
 from src.modules.organizations.models import OrganizationInvitation
 from src.config.mail import mail_sender
+from src.tasks import send_verification_email, send_forgot_password_email
 
 
 router = APIRouter()
 
-@router.post("/send-verification-email")
-def send_verification_email():
-   
-    
-    token = generate_numeric_token(6)
-    mail_sender.send(
-    subject="Test via Mailtrap SMTP",
-    recipients=["test@example.com"],
-    body_html="<p>This is a test email.</p>",
-    body_text="This is a test email."
-)
-    return {"message": "Verification email sent successfully"}
 
 
 @router.post("/login")
@@ -54,6 +43,7 @@ def login(request: LoginDto):
         expires_at=datetime.utcnow() + timedelta(days=30)
     )
 
+
     return {"access_token": token, "refresh_token": refresh_token}
 
 
@@ -66,10 +56,18 @@ def logout( user=Depends(get_current_user)):
         "user_id":user.id,
         "active":True
     })
+
+
     if not token_data:
         raise HTTPException(status_code=404, detail="No active refresh token found")
     # Mark the token as inactive
     RefreshToken.update(token_data.id,active=False)
+
+
+
+
+
+    
 
     return {"message": "Logged out successfully"}
 
@@ -129,6 +127,8 @@ def register(request: RegisterDto, session: Session = Depends(get_session)):
         expires_at=datetime.utcnow()+timedelta(days=1),
         type="email_verification"
     )
+
+    send_verification_email.delay(email=request.email, token=token)
    
     
     return {"message": "User registered successfully"}
@@ -221,6 +221,9 @@ def forgot_password_request(body: VerifyEmailDto, session: Session = Depends(get
         expires_at=(datetime.utcnow()+timedelta(hours=1)),
         type="forgot_password"
     )
+    send_forgot_password_email.delay(email=body.email, token=token)
+
+    
 
     # For simplicity, we are just returning the token here
    

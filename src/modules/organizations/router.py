@@ -7,6 +7,7 @@ from .models import Organization, OrganizationMember, OrganizationRole, Organiza
 from src.modules.auth.models import User
 from src.modules.organizations.dto import AssignRoleDto
 from src.common.models import Permission
+from src.tasks import send_invitation_email
 
 
 router = APIRouter()
@@ -285,6 +286,7 @@ def invite_user(body:OrganizationInviteDto, user=Depends(get_current_user)):
     
     record = OrganizationInvitation.create(email=body.email,invited_by_id=user.id,status='pending',organization_id=organization_id, role_ids=body.role_ids)
 
+    send_invitation_email.delay(email=body.email)
     return record
 
 @router.get('/invitation')

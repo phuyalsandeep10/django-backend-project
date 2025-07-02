@@ -1,11 +1,14 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 WORKDIR /code
 
-COPY ./app/requirements.txt .
+COPY pyproject.toml .
+COPY uv.lock .
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install uv 
+RUN uv pip install --system .
 
-COPY ./app .
+COPY ./src ./src
+COPY ./src/main.py ./src/main.py
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
