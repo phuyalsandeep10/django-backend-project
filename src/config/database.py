@@ -1,9 +1,14 @@
 from sqlmodel import Field, Session, SQLModel, create_engine, select,Session
 from typing import Annotated
 from fastapi import Depends
+import os
+from dotenv import load_dotenv
 
-DATABASE_URL = "sqlite:///./db.sqlite"  # Update with your database URL
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+load_dotenv()
+print(os.getenv("DATABASE_URL"))
+DATABASE_URL = os.getenv("DATABASE_URL")# Updated to use PostgreSQL
+engine = create_engine(DATABASE_URL)
+
 def init_db():
     SQLModel.metadata.create_all(engine)
 

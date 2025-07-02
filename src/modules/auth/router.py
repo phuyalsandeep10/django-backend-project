@@ -10,9 +10,23 @@ from .models import User, EmailVerification, RefreshToken
 from src.config.database import get_session, Session
 from src.common.utils import generate_numeric_token, compare_password, hash_password, generate_refresh_token
 from src.modules.organizations.models import OrganizationInvitation
+from src.config.mail import mail_sender
 
 
 router = APIRouter()
+
+@router.post("/send-verification-email")
+def send_verification_email():
+   
+    
+    token = generate_numeric_token(6)
+    mail_sender.send(
+    subject="Test via Mailtrap SMTP",
+    recipients=["test@example.com"],
+    body_html="<p>This is a test email.</p>",
+    body_text="This is a test email."
+)
+    return {"message": "Verification email sent successfully"}
 
 
 @router.post("/login")

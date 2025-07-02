@@ -2,6 +2,14 @@ from logging.config import fileConfig
 from sqlmodel import SQLModel
 from sqlalchemy import create_engine
 from alembic import context
+import sys
+import os
+from dotenv import load_dotenv
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src', 'config')))
+
+from src.config.database import DATABASE_URL
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -35,7 +43,8 @@ def run_migrations_offline() -> None:
     Calls to context.execute() here emit the given string to the
     script output.
     """
-    connectable = create_engine("sqlite:///./db.sqlite")
+    
+    connectable = create_engine(DATABASE_URL)
 
     # Acquire a connection from the EnginB
     with connectable.connect() as connection:
@@ -47,7 +56,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online():
-    connectable = create_engine("sqlite:///./db.sqlite")
+    connectable = create_engine(DATABASE_URL)
     with connectable.connect() as connection:
         context.configure(
             connection=connection,
