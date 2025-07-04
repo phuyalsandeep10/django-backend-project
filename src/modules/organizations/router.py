@@ -8,6 +8,7 @@ from src.modules.auth.models import User
 from src.modules.organizations.dto import AssignRoleDto
 from src.common.models import Permission
 from src.tasks import send_invitation_email
+from src.enums import InvitationStatus
 
 
 router = APIRouter()
@@ -308,7 +309,9 @@ def reject_invitation(invitation_id:int,user=Depends(get_current_user)):
     if not invitation:
         raise HTTPException(404,"Not found")
     
-    return OrganizationInvitation.update(invitation.id,status='rejected') 
+    return OrganizationInvitation.update(invitation.id,status=InvitationStatus.REJECTED) 
+
+
 @router.post('/invitation/{invitation_id}/accept')
 def accept_invitation(invitation_id:int,user=Depends(get_current_user),session=Depends(get_session)):
 
@@ -320,7 +323,7 @@ def accept_invitation(invitation_id:int,user=Depends(get_current_user),session=D
     if not invitation:
         raise HTTPException(404,"Not found")
     
-    OrganizationInvitation.update(invitation.id,status='accepted')
+    OrganizationInvitation.update(invitation.id,status=InvitationStatus.ACCEPTED)
 
 
     member = OrganizationMember.find_one({
@@ -360,7 +363,7 @@ def assign_role(body:AssignRoleDto, user=Depends(get_current_user)):
 
     return {"message":"Successfully assign"}
 
-# @router.post('/roles/{role_id}/assign-permissions')
+
 
 
 @router.post('/remove-assign-role')

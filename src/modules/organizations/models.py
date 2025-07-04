@@ -5,6 +5,7 @@ from sqlalchemy.orm import joinedload
 from src.config.database import engine
 import sqlalchemy as sa
 from src.modules.auth.models import User
+from src.enums import InvitationStatus
 
 
 
@@ -59,13 +60,14 @@ class OrganizationMemberRole(CommonModel, table=True):
     member:Optional[OrganizationMember] = Relationship(back_populates="member_roles")
     role: Optional[OrganizationRole] = Relationship(back_populates="member_roles")
 
+
 class OrganizationInvitation(CommonModel, table=True):
     __tablename__ = "sys_organization_invitations"
     email: str = Field(max_length=255, index=True)
     organization_id: int = Field(foreign_key="sys_organizations.id", nullable=False)
     
     invited_by_id: int = Field(foreign_key="sys_users.id", nullable=False)
-    status: str = Field(default="pending", max_length=50, nullable=False)
+    status: str = Field(default=InvitationStatus.PENDING, max_length=50, nullable=False)
 
     role_ids: list[int] = Field(default_factory=list, sa_column=sa.Column(sa.JSON))
 
@@ -74,7 +76,7 @@ class OrganizationInvitation(CommonModel, table=True):
     )
 
 
-  # e.g., pending, accepted, declined
+
 
 
 
