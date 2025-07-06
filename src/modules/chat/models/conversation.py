@@ -1,10 +1,12 @@
 from src.common.models import CommonModel
+from sqlmodel import Field, Relationship
+from typing import Optional
 
 
 
 class Conversation(CommonModel,table=True):
     __tablename__ = "org_conversations"
-    name: str = Field(max_length=255, index=True)
+    name: str = Field(max_length=255, index=True,nullable=True)
     description: str = Field(default=None, max_length=500, nullable=True)
     organization_id: int = Field(foreign_key="sys_organizations.id", nullable=False)
     customer_id: int = Field(foreign_key="org_customers.id", nullable=False)
@@ -14,9 +16,12 @@ class Conversation(CommonModel,table=True):
     ip_address: str = Field(max_length=255, index=True,nullable=True)
 
 
+
 class ConversationMember(CommonModel,table=True):
     __tablename__ = "org_conversation_members"
     user_id: int = Field(foreign_key="sys_users.id", nullable=False)
     conversation_id: int = Field(foreign_key="org_conversations.id", nullable=False)
-    conversation: Optional[Conversation] = Relationship(back_populates="members")
-    user: Optional[User] = Relationship(back_populates="conversations")
+    conversation: Optional["Conversation"] = Relationship(back_populates="members")
+    user: Optional["User"] = Relationship(back_populates="conversations")
+
+

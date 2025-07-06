@@ -32,6 +32,11 @@ def upgrade() -> None:
         sa.Column("phone", sa.String(255), nullable=True),
         sa.Column("email", sa.String(255), nullable=True),
         sa.Column("ip_address", sa.String(255), nullable=True),
+        sa.Column("latitude", sa.Float, nullable=True),
+        sa.Column("longitude", sa.Float, nullable=True),
+        sa.Column("city", sa.String(255), nullable=True),
+        sa.Column("country", sa.String(255), nullable=True),
+       
     )
 
 

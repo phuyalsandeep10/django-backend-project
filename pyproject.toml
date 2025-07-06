@@ -5,8 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "aiohttp>=3.12.13",
     "alembic>=1.16.2",
+    "asyncio-redis>=0.16.0",
     "bcrypt>=4.3.0",
+    "broadcaster>=0.3.1",
     "cachetools>=6.1.0",
     "celery[redis]>=5.5.3",
     "fastapi[standard]>=0.115.14",
@@ -16,4 +19,5 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "python-jose[cryptography]>=3.5.0",
     "sqlmodel>=0.0.24",
+    "websockets>=15.0.1",
 ]

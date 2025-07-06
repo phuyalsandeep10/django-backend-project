@@ -1,4 +1,6 @@
 from src.common.models import CommonModel
+from sqlmodel import Field, Relationship
+from typing import Optional
 
 
 
@@ -14,4 +16,7 @@ class Customer(CommonModel,table=True):
     email: str = Field(max_length=255, index=True,nullable=True)
 
     ip_address: str = Field(max_length=255, index=True,nullable=True)
-    
+    latitude: float = Field(nullable=True)
+    longitude: float = Field(nullable=True)
+    city: str = Field(max_length=255, index=True,nullable=True)
+    country: str = Field(max_length=255, index=True,nullable=True)

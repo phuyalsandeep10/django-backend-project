@@ -3,7 +3,7 @@ PROJECT_VERSION = "1.0.0"
 PROJECT_DESCRIPTION = "This is a sample project to demonstrate configuration settings."
 DATABASE_URL = "sqlite:///./test.db"
 API_PREFIX = "/api"
-ALLOWED_HOSTS = ["localhost", ""]
+ALLOWED_HOSTS = ["*"]
 SECRET_KEY='your-secret-key'
 
 

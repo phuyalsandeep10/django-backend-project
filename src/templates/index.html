@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf‑8">
+  <title>Dynamic Room Chat</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #chatBox { height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; }
+    #typingIndicator { font-style: italic; color: gray; margin-top: 5px; }
+    #inputArea { margin-top: 10px; }
+    #inputMsg { width: 80%; padding: 8px; }
+    button { padding: 8px 12px; }
+  </style>
+</head>
+<body>
+
+  <h2>Room Chat</h2>
+  <div id="chatBox"></div>
+  <div id="typingIndicator"></div>
+
+  <div id="inputArea">
+    <input type="text" id="inputMsg" placeholder="Type a message..." autocomplete="off" />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+<script>
+  // 1. Get roomId from ?room=... or ask user
+  const params = new URLSearchParams(window.location.search);
+  let roomId = params.get('room');
+  if (!roomId) {
+    roomId = prompt('Enter room ID:');
+    history.replaceState(null, '', '?room=' + encodeURIComponent(roomId));
+  }
+
+  // 2. Ask for the user's name
+  const role = prompt('Enter your role (user/agent):');
+  const user = prompt('Enter your name:');
+
+  // 3. Open WebSocket connection
+  const ws = new WebSocket(
+    `ws://${location.host}/ws/${encodeURIComponent(roomId)}?role=${encodeURIComponent(role)}`
+  );
+
+  ws.onopen = () => {
+    console.log('Connected to room:', roomId);
+  };
+
+  ws.onmessage = event => {
+    console.log({event})
+    const d = JSON.parse(event.data);
+    if (d.type === 'message') {
+      addChat(`${d.user}: ${d.message}`);
+    } else if (d.type === 'typing' && d.user !== user) {
+      showTyping(d.user);
+    }
+  };
+
+  ws.onerror = (event) => {
+    console.error("WebSocket error:", event);
+  };
+
+  ws.onclose = (event) => {
+    console.warn("WebSocket closed:", event);
+    alert("WebSocket connection closed. Please refresh the page.");
+  };
+
+  function addChat(text) {
+    clearTyping();
+    const div = document.createElement('div');
+    div.textContent = text;
+    document.getElementById('chatBox').appendChild(div);
+    div.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function sendMessage() {
+    const input = document.getElementById('inputMsg');
+    const text = input.value.trim();
+    if (text === '') return;
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'message', message: text, user }));
+      input.value = '';
+    } else {
+      alert("WebSocket is not connected.");
+    }
+  }
+
+  let typingTimeout;
+  document.getElementById('inputMsg').addEventListener('input', () => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'typing', user }));
+    }
+  });
+
+  function showTyping(userTyping) {
+    const el = document.getElementById('typingIndicator');
+    el.textContent = `${userTyping} is typing...`;
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(clearTyping, 3000);
+  }
+
+  function clearTyping() {
+    document.getElementById('typingIndicator').textContent = '';
+  }
+</script>
+</body>
+</html>

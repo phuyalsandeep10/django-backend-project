@@ -1,7 +1,6 @@
 from src.common.models import CommonModel
 
 
-
 class Message(CommonModel,table=True):
     __tablename__ = "org_messages"
     conversation_id: int = Field(foreign_key="org_conversations.id", nullable=False)
