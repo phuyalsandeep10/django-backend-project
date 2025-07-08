@@ -6,6 +6,7 @@ from src.modules.chat.models.conversation import Conversation
 from src.modules.chat.models.customer import Customer
 
 
+
 router = APIRouter()
 
 @router.post("/{organizationId}")
@@ -15,19 +16,21 @@ def create_customer(organizationId:int,request:Request):
 
 
     customer = Customer.create(
+        name=f"{ip}-customer",
         ip_address=ip,
         organization_id=organizationId
     )
 
     conversation = Conversation.create(
+        name=f"{ip}-Conversation",
         customer_id=customer.id,
         ip_address = ip,
-        organization_id=Organization.id
+        organization_id=organizationId
     )
 
     return {
-        customer,
-        conversation
+        "customer":customer,
+        "conversation":conversation
     }
 
 

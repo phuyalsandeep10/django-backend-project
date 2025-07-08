@@ -1,16 +1,17 @@
 from src.common.models import CommonModel
+from sqlmodel import Field, Relationship
+from typing import Optional
+
 
 
 class Message(CommonModel,table=True):
     __tablename__ = "org_messages"
     conversation_id: int = Field(foreign_key="org_conversations.id", nullable=False)
-    conversation: Optional[Conversation] = Relationship(back_populates="messages")
     content: str = Field(max_length=255, index=True)
-    sender_type: str = Field(max_length=255, index=True)
     customer_id: int = Field(foreign_key="org_customers.id", nullable=False)
-    customer: Optional[Customer] = Relationship(back_populates="messages")
-    sender_id: int = Field(foreign_key="org_conversation_members.id", nullable=True)
-    sender: Optional["ConversationMember"] = Relationship(back_populates="messages")
+    customer: Optional["Customer"] = Relationship(back_populates="messages")
+    user_id: int = Field(foreign_key="sys_users.id", nullable=True)
+    user: Optional["User"] = Relationship(back_populates="messages", sa_relationship_kwargs={"foreign_keys": "[Message.user_id]"})
 
     feedback: str = Field(max_length=255, index=True,nullable=True)
 

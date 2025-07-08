@@ -15,6 +15,18 @@ security = HTTPBearer()
 
 bearer_scheme = HTTPBearer()
 
+def get_user_by_token(token:str):
+    if(token in user_cache):
+        return user_cache[token]
+    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=settings.ALGORITHM)
+
+    user_email: str = payload.get("sub")
+    
+    user = User.find_one(where={
+        "email":user_email
+    })
+    return user
+
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security),session:Session = Depends(get_session)):
     """Get current authenticated user"""
@@ -26,19 +38,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     
     try:
         token = credentials.credentials.split(" ")[-1] if " " in credentials.credentials else credentials.credentials
-        if(token in user_cache):
-            return user_cache[token]
-        
-        
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=settings.ALGORITHM)
-
-        user_email: str = payload.get("sub")
-        user = BaseRepository(User,session=session).find_one({"email": user_email})
-        # Check if user exists in cache
-
-
-
-
+        user = get_user_by_token(token)
+    
 
         if user is None:
             raise credentials_exception

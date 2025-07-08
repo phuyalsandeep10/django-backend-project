@@ -37,4 +37,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    pass
+    op.drop_table('org_conversations')

@@ -26,12 +26,21 @@ class User(BaseModel, table=True):
         back_populates="user",
         sa_relationship_kwargs={"foreign_keys": "[OrganizationMember.user_id]"}
     )
+    
 
 
 
     team_members:list['TeamMember'] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={"foreign_keys":"[TeamMember.user_id]"}
+    )
+    messages: list["Message"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"foreign_keys": "[Message.user_id]"}
+    )
+    conversations: list["ConversationMember"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"foreign_keys": "[ConversationMember.user_id]"}
     )
 
     

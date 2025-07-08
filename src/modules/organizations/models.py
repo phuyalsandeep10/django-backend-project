@@ -17,6 +17,8 @@ class Organization(CommonModel,table=True):
     logo: str = Field(default=None, max_length=255, nullable=True)
     website: str = Field(default=None, max_length=255, nullable=True)
     members: list["OrganizationMember"] = Relationship(back_populates="organization")
+    conversations: list["Conversation"] = Relationship(back_populates="organization")
+    customers: list["Customer"] = Relationship(back_populates="organization")
     
     @classmethod
     def get_orgs_by_user_id(cls, user_id: int):

@@ -29,12 +29,10 @@ def upgrade() -> None:
         *common_columns(),
         sa.Column("conversation_id", sa.Integer, sa.ForeignKey("org_conversations.id"), nullable=False),
         sa.Column("content", sa.String(255), nullable=False),
-        sa.Column("sender_type", sa.String(255), nullable=False),
-        sa.Column("customer_id", sa.Integer, sa.ForeignKey("org_customers.id"), nullable=False),
-        sa.Column("sender_id", sa.Integer, sa.ForeignKey("org_conversation_members.id"), nullable=True),
+        sa.Column("customer_id", sa.Integer, sa.ForeignKey("org_customers.id"), nullable=True),
+        sa.Column("user_id", sa.Integer, sa.ForeignKey("sys_users.id"), nullable=True),
         sa.Column("feedback", sa.String(255), nullable=True),
     )
-
 
 def downgrade() -> None:
     """Downgrade schema."""
