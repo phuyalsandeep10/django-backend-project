@@ -16,4 +16,4 @@ class settings:
     ALLOWED_HOSTS: list[str]= ALLOWED_HOSTS
     SECRET_KEY: str = SECRET_KEY
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1

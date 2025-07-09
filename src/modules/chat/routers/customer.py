@@ -34,9 +34,6 @@ def create_customer(organizationId:int,request:Request):
     }
 
 
-
-
-
 @router.get("")
 def get_customers(organizationId:int,user = Depends(get_current_user)):
 

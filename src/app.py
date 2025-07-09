@@ -11,19 +11,18 @@ from src.modules.chat.routers.customer import router as customer_router
 from src.config.broadcast import broadcast
 
 
-
-app = FastAPI(on_startup=[broadcast.connect], on_shutdown=[broadcast.disconnect])
-
 # Replace with your friend's IP or use "*" for all origins (less secure)
 
 app = FastAPI(
-        title=settings.PROJECT_NAME,
-        version=settings.PROJECT_VERSION,
-        description=settings.PROJECT_DESCRIPTION,
-    )
+    on_startup=[broadcast.connect], 
+    on_shutdown=[broadcast.disconnect],
+    title=settings.PROJECT_NAME,
+    version=settings.PROJECT_VERSION,
+    description=settings.PROJECT_DESCRIPTION,
+)
 
 
-    # CORS middleware
+# CORS middleware
 app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.ALLOWED_HOSTS,
