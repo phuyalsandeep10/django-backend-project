@@ -8,7 +8,9 @@ from src.modules.chat.models.conversation import Conversation
 def save_messages(conversation_id: int, data:dict,user_id:Optional[int]=None):
     print("saving message in queue")
     conversation = Conversation.get(conversation_id)
+
     customer_id = conversation.customer_id
+    
     if user_id:
         customer_id = None
 
@@ -18,5 +20,10 @@ def save_messages(conversation_id: int, data:dict,user_id:Optional[int]=None):
         customer_id=customer_id,
         user_id=user_id
     )
+    
+
+
+
+
 
     
