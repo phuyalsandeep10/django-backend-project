@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from jose import jwt
 from datetime import datetime, timedelta
 from src.common.dependencies import get_current_user
@@ -12,11 +12,26 @@ from src.common.utils import generate_numeric_token, compare_password, hash_pass
 from src.modules.organizations.models import OrganizationInvitation
 from src.config.mail import mail_sender
 from src.tasks import send_verification_email, send_forgot_password_email
+from .social_auth import oauth
 
 
 router = APIRouter()
 
 
+def create_token(user):
+    token = create_access_token({"sub": user.email})
+    refresh_token = generate_refresh_token()
+
+    RefreshToken.create(
+        user_id=user.id,
+        token=refresh_token,
+        active=True,
+        created_at=datetime.utcnow(),
+        expires_at=datetime.utcnow() + timedelta(days=30)
+    )
+
+
+    return {"access_token": token, "refresh_token": refresh_token}
 
 @router.post("/login")
 def login(request: LoginDto):
@@ -32,19 +47,20 @@ def login(request: LoginDto):
     if not compare_password(user.password, request.password):
         raise HTTPException(status_code=401, detail="Invalid password")
     
-    token = create_access_token({"sub": user.email})
-    refresh_token = generate_refresh_token()
+    # token = create_access_token({"sub": user.email})
+    # refresh_token = generate_refresh_token()
 
-    RefreshToken.create(
-        user_id=user.id,
-        token=refresh_token,
-        active=True,
-        created_at=datetime.utcnow(),
-        expires_at=datetime.utcnow() + timedelta(days=30)
-    )
+    # RefreshToken.create(
+    #     user_id=user.id,
+    #     token=refresh_token,
+    #     active=True,
+    #     created_at=datetime.utcnow(),
+    #     expires_at=datetime.utcnow() + timedelta(days=30)
+    # )
 
 
-    return {"access_token": token, "refresh_token": refresh_token}
+    # return {"access_token": token, "refresh_token": refresh_token}
+    return create_token(user)
 
 
 
@@ -268,3 +284,34 @@ def get_invitations(user=Depends(get_current_user)):
     return OrganizationInvitation.filter(where={
         "email":user.email
     })
+
+
+
+@router.get("/oauth/google")
+async def login(request: Request):
+    redirect_uri = request.url_for('auth')
+    print("redirect_uri",redirect_uri)
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+@router.get("/oauth/google/callback")
+async def auth(request: Request):
+
+    response = await oauth.google.authorize_access_token(request)
+
+    userinfo = response.get('userinfo')
+
+    name = userinfo.get('email')
+    email = userinfo.get('email')
+    image = userinfo.get('picture')
+
+
+    user = User.find_one(where={
+        "email":email
+    })
+    
+    if user:
+        return create_token(user)
+    
+    user = User.create(email=email,name=name,image=image,email_verified_at=datetime.utcnow(),password='')
+    
+    return create_token(user)
