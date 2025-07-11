@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from jose import jwt
 from datetime import datetime, timedelta
 from src.common.dependencies import get_current_user
@@ -13,6 +14,7 @@ from src.modules.organizations.models import OrganizationInvitation
 from src.config.mail import mail_sender
 from src.tasks import send_verification_email, send_forgot_password_email
 from .social_auth import oauth
+from src.config.settings import settings
 
 
 router = APIRouter()
@@ -290,7 +292,7 @@ def get_invitations(user=Depends(get_current_user)):
 @router.get("/oauth/google")
 async def login(request: Request):
     redirect_uri = request.url_for('auth')
-    print("redirect_uri",redirect_uri)
+
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get("/oauth/google/callback")
@@ -309,9 +311,12 @@ async def auth(request: Request):
         "email":email
     })
     
-    if user:
-        return create_token(user)
+    if not user:
+        user = User.create(email=email,name=name,image=image,email_verified_at=datetime.utcnow(),password='')
     
-    user = User.create(email=email,name=name,image=image,email_verified_at=datetime.utcnow(),password='')
-    
-    return create_token(user)
+    tokens =  create_token(user)
+
+    redirect_url = f"{settings.FRONTEND_URL}/login?access_token={tokens.get('access_token')}&refresh_token={tokens.get('refresh_token')}"
+    print(f"redirect url {redirect_url}")
+    return RedirectResponse(redirect_url)
+
