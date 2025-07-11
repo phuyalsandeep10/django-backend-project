@@ -21,7 +21,7 @@ router = APIRouter()
 
 
 def create_token(user):
-    token = create_access_token({"sub": user.email})
+    token = create_access_token(data={"sub": user.email})
     refresh_token = generate_refresh_token()
 
     RefreshToken.create(
@@ -49,19 +49,10 @@ def login(request: LoginDto):
     if not compare_password(user.password, request.password):
         raise HTTPException(status_code=401, detail="Invalid password")
     
-    # token = create_access_token({"sub": user.email})
-    # refresh_token = generate_refresh_token()
-
-    # RefreshToken.create(
-    #     user_id=user.id,
-    #     token=refresh_token,
-    #     active=True,
-    #     created_at=datetime.utcnow(),
-    #     expires_at=datetime.utcnow() + timedelta(days=30)
-    # )
+    
 
 
-    # return {"access_token": token, "refresh_token": refresh_token}
+
     return create_token(user)
 
 
@@ -115,7 +106,7 @@ def refresh_token(body:RefreshTokenDto, session: Session = Depends(get_session))
         user = User.get(token_data.user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        access_token = create_access_token({"sub": user.email})
+        access_token = create_access_token(data={"sub": user.email})
         return {"access_token": access_token}
     except jwt.JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -306,7 +297,6 @@ async def auth(request: Request):
     email = userinfo.get('email')
     image = userinfo.get('picture')
 
-
     user = User.find_one(where={
         "email":email
     })
@@ -317,6 +307,6 @@ async def auth(request: Request):
     tokens =  create_token(user)
 
     redirect_url = f"{settings.FRONTEND_URL}/login?access_token={tokens.get('access_token')}&refresh_token={tokens.get('refresh_token')}"
-    print(f"redirect url {redirect_url}")
+
     return RedirectResponse(redirect_url)
 

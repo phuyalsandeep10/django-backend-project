@@ -21,7 +21,7 @@ class settings:
     ALLOWED_HOSTS: list[str]= ALLOWED_HOSTS
     SECRET_KEY: str = SECRET_KEY
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1 # minutes
     FRONTEND_URL:str = FRONTEND_URL
 
 

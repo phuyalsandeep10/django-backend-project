@@ -28,8 +28,6 @@ class User(BaseModel, table=True):
     )
     
 
-
-
     team_members:list['TeamMember'] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={"foreign_keys":"[TeamMember.user_id]"}

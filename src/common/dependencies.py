@@ -16,16 +16,23 @@ security = HTTPBearer()
 bearer_scheme = HTTPBearer()
 
 def get_user_by_token(token:str):
-    if(token in user_cache):
-        return user_cache[token]
-    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=settings.ALGORITHM)
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=settings.ALGORITHM)
+        print('payload',payload)
+        if(token in user_cache):
+            return user_cache[token]
+        
 
-    user_email: str = payload.get("sub")
-    
-    user = User.find_one(where={
-        "email":user_email
-    })
-    return user
+        user_email: str = payload.get("sub")
+        
+        user = User.find_one(where={
+            "email":user_email
+        })
+        return user
+    except Exception as e:
+        print("expired",e)
+        return None
+
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security),session:Session = Depends(get_session)):
@@ -76,8 +83,9 @@ def invalidate_user_cache(token: str):
     user_cache.pop(token, None)
 
     
-def create_access_token(data: dict, expires_delta: timedelta = None):
+def create_access_token(data: dict, expires_duration:int = settings.ACCESS_TOKEN_EXPIRE_MINUTES):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+
+    expire = datetime.utcnow() + (timedelta(minutes=expires_duration))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)

@@ -20,6 +20,7 @@ class ForgotPasswordVerifyDto(VerifyEmailTokenDto):
 
 class RefreshTokenDto(BaseModel):
     token: str # this is the refresh token to be validated
+    
 
 
 
