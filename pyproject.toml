@@ -22,4 +22,5 @@ dependencies = [
     "python-jose[cryptography]>=3.5.0",
     "sqlmodel>=0.0.24",
     "websockets>=15.0.1",
+    "confluent-kafka>=2.3.0",
 ]

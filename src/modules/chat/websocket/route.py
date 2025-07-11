@@ -30,8 +30,10 @@ async def ws_room(websocket: WebSocket, conversation_id: int,token:str = Query(N
         while True:
             data = await websocket.receive_text()
             data = json.loads(data)
+
            
             if data.get('type') =='message':
+                print("save messages in websocket")
                 save_messages.delay(
                 conversation_id=conversation_id,
                 data={

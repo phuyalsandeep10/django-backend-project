@@ -1,7 +1,3 @@
-from dotenv import load_dotenv
-import os
-load_dotenv()
-
 PROJECT_NAME = "MyProject"
 PROJECT_VERSION = "1.0.0"
 PROJECT_DESCRIPTION = "This is a sample project to demonstrate configuration settings."
@@ -9,7 +5,9 @@ DATABASE_URL = "sqlite:///./test.db"
 API_PREFIX = "/api"
 ALLOWED_HOSTS = ["*"]
 SECRET_KEY='your-secret-key'
-FRONTEND_URL = os.getenv('FRONTEND_URL')
+
+KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
+KAFKA_TOPIC = "chat-messages"
 
 
 class settings:
@@ -21,7 +19,8 @@ class settings:
     ALLOWED_HOSTS: list[str]= ALLOWED_HOSTS
     SECRET_KEY: str = SECRET_KEY
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1 # minutes
-    FRONTEND_URL:str = FRONTEND_URL
-
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1
+    KAFKA_BOOTSTRAP_SERVERS: str = KAFKA_BOOTSTRAP_SERVERS
+    KAFKA_TOPIC: str = KAFKA_TOPIC
+    
 
