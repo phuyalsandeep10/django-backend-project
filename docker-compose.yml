@@ -27,6 +27,7 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/chatboq_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
       - redis
       - db
@@ -87,6 +88,7 @@ services:
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      
     depends_on:
       - kafka
     healthcheck:

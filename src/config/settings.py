@@ -9,7 +9,10 @@ SECRET_KEY='your-secret-key'
 import os
 
 # Use 'kafka:9092' if running in Docker, else 'localhost:29092'
-KAFKA_BOOTSTRAP_SERVERS =  "localhost:29092"
+KAFKA_BOOTSTRAP_SERVERS = os.getenv(
+    "KAFKA_BOOTSTRAP_SERVERS",
+    "kafka:9092" if os.getenv("IN_DOCKER") else "localhost:29092"
+)
 KAFKA_TOPIC = "chat-messages"
 
 

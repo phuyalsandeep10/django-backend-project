@@ -18,7 +18,7 @@ celery_app.conf.update(
     beat_schedule={
         'consume-kafka-messages-every-10s': {
             'task': 'src.tasks.message_task.consume_kafka_messages_batch',
-            'schedule': 10.0,
+            'schedule': 60.0,
             'args': (),
             'kwargs': {'batch_size': 20, 'poll_timeout': 1.0, 'max_polls': 10}
         },
