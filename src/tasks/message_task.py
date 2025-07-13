@@ -37,15 +37,21 @@ def save_messages(conversation_id: int, data:dict,user_id:Optional[int]=None):
             customer_id = None
 
         # Kafka producer logic
-        producer = Producer({'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS})
-        kafka_payload = {
-            'conversation_id': conversation_id,
-            'user_id': user_id,
-            'message': data.get('message')
-        }
-        producer.produce(settings.KAFKA_TOPIC, json.dumps(kafka_payload).encode('utf-8'))
-        producer.flush()
-        print("Message sent to Kafka successfully")
+        try:
+            producer = Producer({'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS})
+            kafka_payload = {
+                'conversation_id': conversation_id,
+                'user_id': user_id,
+                'message': data.get('message')
+            }
+            producer.produce(settings.KAFKA_TOPIC, json.dumps(kafka_payload).encode('utf-8'))
+            producer.flush()
+            print("Message sent to Kafka successfully")
+        except Exception as kafka_error:
+            print(f"Kafka connection error: {kafka_error}")
+            print(f"Trying to connect to: {settings.KAFKA_BOOTSTRAP_SERVERS}")
+            # For now, just log the error and continue
+            # In production, you might want to store messages in a fallback queue
     except Exception as e:
         print(f"kafka error producer {e}")
         import traceback

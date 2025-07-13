@@ -6,7 +6,10 @@ API_PREFIX = "/api"
 ALLOWED_HOSTS = ["*"]
 SECRET_KEY='your-secret-key'
 
-KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
+import os
+
+# Try to get Kafka bootstrap servers from environment variable, otherwise use default
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:29092")
 KAFKA_TOPIC = "chat-messages"
 
 
