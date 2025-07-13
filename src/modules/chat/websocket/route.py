@@ -3,7 +3,7 @@ from src.app import app
 from src.modules.chat.websocket.connection_manager import rooms, Room
 import json
 from src.tasks import save_messages
-from src.modules.chat.models.message import Message
+from src.models import Message
 from src.common.dependencies import get_user_by_token
 
 @app.websocket("/ws/{conversation_id}")

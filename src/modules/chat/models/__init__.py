@@ -1,3 +1,2 @@
-from .message import Message
-from .customer import Customer
-from src.modules.auth.models import User
+# Models are now imported through src.models to avoid circular imports
+# This file is kept for backward compatibility but imports are handled centrally

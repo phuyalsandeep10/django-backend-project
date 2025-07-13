@@ -10,7 +10,7 @@ from .models import User, EmailVerification, RefreshToken
 
 from src.config.database import get_session, Session
 from src.common.utils import generate_numeric_token, compare_password, hash_password, generate_refresh_token
-from src.modules.organizations.models import OrganizationInvitation
+from src.models import OrganizationInvitation
 from src.config.mail import mail_sender
 from src.tasks import send_verification_email, send_forgot_password_email
 from .social_auth import oauth

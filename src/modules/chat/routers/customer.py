@@ -2,8 +2,7 @@ from fastapi import APIRouter
 from fastapi import FastAPI, Request, Header, Depends
 import httpx
 from src.common.dependencies import get_current_user
-from src.modules.chat.models.conversation import Conversation
-from src.modules.chat.models.customer import Customer
+from src.models import Conversation, Customer
 
 
 

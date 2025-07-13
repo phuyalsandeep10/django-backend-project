@@ -11,6 +11,8 @@ DATABASE_URL = os.getenv("DATABASE_URL")# Updated to use PostgreSQL
 engine = create_engine(DATABASE_URL)
 
 def init_db():
+    # Import all models to ensure they are registered with SQLAlchemy
+    import src.models
     SQLModel.metadata.create_all(engine)
 
 

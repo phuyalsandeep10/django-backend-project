@@ -1,33 +1,40 @@
 from src.config.celery import celery_app
 from typing import Optional
-from src.modules.chat.models.message import Message
-from src.modules.chat.models.conversation import Conversation
 from confluent_kafka import Producer
 import json
 from src.config.settings import settings
 from confluent_kafka import Consumer
 import time
-from src.modules.chat.models.message import Message
 from src.config.database import engine
 from sqlmodel import Session
 from celery.schedules import crontab
+
+# Import models from centralized location to avoid circular imports
+from src.models import Message, Conversation
 
 
 @celery_app.task
 def save_messages(conversation_id: int, data:dict,user_id:Optional[int]=None):
     try:
-        print("saving message in queue")
+        print(f"saving message in queue for conversation_id: {conversation_id}")
+        
+        # Debug: Check if there are any conversations in the database
+        all_conversations = Conversation.get_all()
+        print(f"Total conversations in database: {len(all_conversations)}")
+        if all_conversations:
+            print(f"Available conversation IDs: {[c.id for c in all_conversations]}")
+        
         conversation = Conversation.get(conversation_id)
 
+        if not conversation:
+            print(f"Conversation with ID {conversation_id} not found")
+            return
+
         customer_id = conversation.customer_id
-
-
+        print(f"Found conversation: {conversation.id}, customer_id: {customer_id}")
 
         if user_id:
             customer_id = None
-
-        
-        
 
         # Kafka producer logic
         producer = Producer({'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS})
@@ -38,8 +45,11 @@ def save_messages(conversation_id: int, data:dict,user_id:Optional[int]=None):
         }
         producer.produce(settings.KAFKA_TOPIC, json.dumps(kafka_payload).encode('utf-8'))
         producer.flush()
+        print("Message sent to Kafka successfully")
     except Exception as e:
         print(f"kafka error producer {e}")
+        import traceback
+        traceback.print_exc()
     
 
 

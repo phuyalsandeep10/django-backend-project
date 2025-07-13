@@ -3,8 +3,7 @@ from src.common.dependencies import get_current_user,get_bearer_token,update_use
 from src.config.database import get_session, Session
 from .dto import OrganizationDto, OrganizationRoleDto, OrganizationInviteDto , PermissionDto, AssignPermissionDto
 
-from .models import Organization, OrganizationMember, OrganizationRole, OrganizationInvitation, OrganizationMemberRole
-from src.modules.auth.models import User
+from src.models import Organization, OrganizationMember, OrganizationRole, OrganizationInvitation, OrganizationMemberRole, User
 from src.modules.organizations.dto import AssignRoleDto
 from src.common.models import Permission
 from src.tasks import send_invitation_email

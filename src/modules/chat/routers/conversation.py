@@ -2,9 +2,7 @@ from fastapi import APIRouter
 from fastapi import FastAPI, Request, Header, Depends, Query
 import httpx
 from src.common.dependencies import get_current_user
-from src.modules.chat.models.conversation import Conversation
-from src.modules.chat.models.customer import Customer
-from src.modules.chat.models.message import Message
+from src.models import Conversation, Customer, Message
 
 
 router = APIRouter()

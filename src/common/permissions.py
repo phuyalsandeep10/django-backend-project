@@ -1,10 +1,9 @@
 
-from src.modules.auth.models import User
+from src.models import User, OrganizationMember
 from fastapi import Depends, HTTPException, status
 
 from src.common.dependencies import get_current_user, get_session
 from src.common.base_repository import BaseRepository
-from src.modules.organizations.models import OrganizationMember
 from sqlalchemy.orm import Session
 from typing import List
 
