@@ -8,8 +8,8 @@ SECRET_KEY='your-secret-key'
 
 import os
 
-# Try to get Kafka bootstrap servers from environment variable, otherwise use default
-KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:29092")
+# Use 'kafka:9092' if running in Docker, else 'localhost:29092'
+KAFKA_BOOTSTRAP_SERVERS =  "localhost:29092"
 KAFKA_TOPIC = "chat-messages"
 
 
@@ -22,7 +22,7 @@ class settings:
     ALLOWED_HOSTS: list[str]= ALLOWED_HOSTS
     SECRET_KEY: str = SECRET_KEY
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15 # 15 minutes
     KAFKA_BOOTSTRAP_SERVERS: str = KAFKA_BOOTSTRAP_SERVERS
     KAFKA_TOPIC: str = KAFKA_TOPIC
     
