@@ -5,7 +5,7 @@ import json
 from src.config.settings import settings
 from confluent_kafka import Consumer
 import time
-from src.config.database import engine
+from src.config.database import async_session 
 from sqlmodel import Session
 from celery.schedules import crontab
 
@@ -121,17 +121,17 @@ def run_kafka_consumer_batch(
             if len(batch) >= batch_size or (batch and now - last_flush >= flush_interval):
                 print(f"[KAFKA CONSUMER] Flushing batch of {len(batch)} messages...")
                 try:
-                    with Session(engine) as session:
-                        objs = [
-                            Message(
-                                conversation_id=m['conversation_id'],
-                                content=m['message'],
-                                customer_id=None,  # Set if available in payload
-                                user_id=m.get('user_id')
-                            ) for m in batch
-                        ]
-                        session.add_all(objs)
-                        session.commit()
+                    # with Session(engine) as session:
+                    #     objs = [
+                    #         Message(
+                    #             conversation_id=m['conversation_id'],
+                    #             content=m['message'],
+                    #             customer_id=None,  # Set if available in payload
+                    #             user_id=m.get('user_id')
+                    #         ) for m in batch
+                    #     ]
+                    #     session.add_all(objs)
+                    #     session.commit()
                     print(f"[KAFKA CONSUMER] Successfully inserted batch of {len(batch)} messages.")
                 except Exception as e:
                     print(f"[KAFKA CONSUMER] Error inserting messages into database: {e}")

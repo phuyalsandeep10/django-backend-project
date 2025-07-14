@@ -1,8 +1,8 @@
 from src.common.models import CommonModel
 from sqlmodel import  Field, Relationship, SQLModel, Session, select
-from typing import Optional,List
-from sqlalchemy.orm import joinedload
-from src.config.database import engine
+from typing import Optional
+
+from src.config.database import async_session
 import sqlalchemy as sa
 from src.modules.auth.models import User
 from src.enums import InvitationStatus
@@ -21,8 +21,8 @@ class Organization(CommonModel,table=True):
     customers: list["Customer"] = Relationship(back_populates="organization")
     
     @classmethod
-    def get_orgs_by_user_id(cls, user_id: int):
-        with Session(engine) as session:
+    async def get_orgs_by_user_id(cls, user_id: int):
+        async with async_session() as session:
             statement = select(cls).join(OrganizationMember).where(OrganizationMember.user_id == user_id)
             return session.exec(statement).all()
         

@@ -1,11 +1,11 @@
 
-from sqlmodel import SQLModel, Field, Session,select
+from sqlmodel import SQLModel, Field, select
 import sqlalchemy as sa
 from datetime import datetime
-from typing import Type, TypeVar,List
-from src.config.database import engine
-from typing import Optional, Any
+from typing import Type, TypeVar, List, Optional, Any
+from src.config.database import async_session
 from sqlalchemy import or_, and_
+
 
 
 T = TypeVar('T')
@@ -13,95 +13,90 @@ T = TypeVar('T')
 def case_insensitive(attributes):
     def decorator(func):
         async def wrapper(self, *args, **kwargs):
-            async with Session() as session:
+            async with async_session() as session:
                 query = session.query(self)
-            for key, value in kwargs.items():
-                if key in attributes:
-                    query = query.filter(func.lower(getattr(self, key)) == value.lower())
-            else:
-                query = query.filter(getattr(self, key) == value)
-            return await query.all()
+                for key, value in kwargs.items():
+                    if key in attributes:
+                        query = query.filter(func.lower(getattr(self, key)) == value.lower())
+                    else:
+                        query = query.filter(getattr(self, key) == value)
+                return await query.all()
         return wrapper
     return decorator
 
 class BaseModel(SQLModel):
     id: int = Field(default=None, primary_key=True)
-    @classmethod
-    def get(cls: Type[T], id: int) -> T:
-        with Session(engine) as session:
-            return session.get(cls, id)
-    
 
     @classmethod
-    def get_all(cls: Type[T]) -> list[T]:
+    async def get(cls: Type[T], id: int) -> Optional[T]:
+        async with async_session() as session:
+            return await session.get(cls, id)
 
-        with Session(engine) as session:
+    @classmethod
+    async def get_all(cls: Type[T]) -> List[T]:
+        async with async_session() as session:
             statement = select(cls)
-            return session.exec(statement=statement).all()
+            result = await session.execute(statement)
+            return result.scalars().all()
 
     @classmethod
-    def create(cls: Type[T], **kwargs) -> T:
-        with Session(engine) as session:
+    async def create(cls: Type[T], **kwargs) -> T:
+        async with async_session() as session:
             obj = cls(**kwargs)
             session.add(obj)
-            session.commit()
-            session.refresh(obj)
+            await session.commit()
+            await session.refresh(obj)
             return obj
 
-
-
     @classmethod
-    def update(cls: Type[T], id: int, **kwargs) -> T:
-        with Session(engine) as session:
-            obj = session.get(cls, id)
+    async def update(cls: Type[T], id: int, **kwargs) -> Optional[T]:
+        async with async_session() as session:
+            obj = await session.get(cls, id)
             if obj:
                 for key, value in kwargs.items():
                     setattr(obj, key, value)
-                session.commit()
-                session.refresh(obj)
+                session.add(obj)
+                await session.commit()
+                await session.refresh(obj)
             return obj
-    
-    
 
     @classmethod
-    def delete(cls: Type[T], id: int) -> None:
-        """Delete an object by its ID."""
-        with Session(engine) as session:
-            obj = session.get(cls, id)
+    async def delete(cls: Type[T], id: int) -> None:
+        async with async_session() as session:
+            obj = await session.get(cls, id)
             if obj:
-                session.delete(obj)
-                session.commit()
+                await session.delete(obj)
+                await session.commit()
 
     @classmethod
-    def filter(cls: Type[T],  
+    async def filter(
+        cls: Type[T],
         where: Optional[dict] = None,
         skip: int = 0,
         limit: Optional[int] = None,
         joins: Optional[list[Any]] = None,
-        options: Optional[list[Any]] = None,) -> List[T]:
-        
+        options: Optional[list[Any]] = None,
+    ) -> List[T]:
         statement = query_statement(cls, where=where, joins=joins, options=options)
-        
         if skip:
             statement = statement.offset(skip)
         if limit is not None:
             statement = statement.limit(limit)
-        with Session(engine) as session:
-            result =  session.exec(statement).all()
-            return result if result else []
-    
+        async with async_session() as session:
+            result = await session.execute(statement)
+            return result.scalars().all() if result else []
+
     @classmethod
-    def find_one(
+    async def find_one(
         cls: Type[T],
         where: Optional[dict] = None,
         joins: Optional[list[Any]] = None,
         options: Optional[list[Any]] = None,
     ) -> Optional[T]:
         statement = query_statement(cls, where=where, joins=joins, options=options)
-
-        with Session(engine) as session:
-            result = session.exec(statement).first()
-            return result if result else None
+        async with async_session() as session:
+            result = await session.execute(statement)
+            return result.scalars().first() if result else None
 
 class CommonModel(BaseModel):
     active: bool = Field(default=True, nullable=False)

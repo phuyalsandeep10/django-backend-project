@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from src.common.dependencies import get_current_user,get_bearer_token,update_user_cache
-from src.config.database import get_session, Session
-from .dto import OrganizationDto, OrganizationRoleDto, OrganizationInviteDto , PermissionDto, AssignPermissionDto
+from .dto import OrganizationDto, OrganizationRoleDto, OrganizationInviteDto 
 
 from src.models import Organization, OrganizationMember, OrganizationRole, OrganizationInvitation, OrganizationMemberRole, User
 from src.modules.organizations.dto import AssignRoleDto
@@ -13,7 +12,7 @@ from src.enums import InvitationStatus
 router = APIRouter()
 
 @router.get("")
-async def get_organizations(user=Depends(get_current_user),session: Session = Depends(get_session)):
+async def get_organizations(user=Depends(get_current_user)):
     """
     Get the list of organizations the user belongs to.
     """
@@ -96,7 +95,7 @@ def get_members(user=Depends(get_current_user)):
     return result
 
 @router.put("/{organization_id}")
-def update_organization(organization_id: int, body: OrganizationDto, user=Depends(get_current_user), session: Session = Depends(get_session)):
+def update_organization(organization_id: int, body: OrganizationDto, user=Depends(get_current_user)):
     """
     Update an existing organization.
     """
@@ -198,7 +197,7 @@ def create_role(body: OrganizationRoleDto, user=Depends(get_current_user)):
         )
 
 @router.put('/roles/{role_id}')
-def update_role(role_id:int,body:OrganizationRoleDto,user=Depends(get_current_user), session: Session = Depends(get_session)):
+def update_role(role_id:int,body:OrganizationRoleDto,user=Depends(get_current_user)):
     """
     Update an existing role for an organization.
     """
@@ -249,7 +248,7 @@ def get_roles(user=Depends(get_current_user)):
 
 
 @router.delete('/{role_id}/roles')
-def delete_role(role_id: int, user=Depends(get_current_user), session: Session = Depends(get_session)):
+def delete_role(role_id: int, user=Depends(get_current_user)):
     """
     Delete a role from the organization.
     """
@@ -312,7 +311,7 @@ def reject_invitation(invitation_id:int,user=Depends(get_current_user)):
 
 
 @router.post('/invitation/{invitation_id}/accept')
-def accept_invitation(invitation_id:int,user=Depends(get_current_user),session=Depends(get_session)):
+def accept_invitation(invitation_id:int,user=Depends(get_current_user)):
 
     invitation = OrganizationInvitation.get(invitation_id)
 

@@ -2,18 +2,16 @@
 from src.models import User, OrganizationMember
 from fastapi import Depends, HTTPException, status
 
-from src.common.dependencies import get_current_user, get_session
-from src.common.base_repository import BaseRepository
-from sqlalchemy.orm import Session
+from src.common.dependencies import get_current_user
+
 from typing import List
 
-def is_organization_owner(
+async def is_organization_owner(
     organization_id: int,
     user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
+ 
 ):
-    member_repo = BaseRepository(OrganizationMember, session=session)
-    member = member_repo.find_one({
+    member = OrganizationMember.find_one(where={
         "organization_id": organization_id,
         "user_id": user.id,
         "is_owner": True

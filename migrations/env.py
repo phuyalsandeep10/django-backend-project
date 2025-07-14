@@ -1,14 +1,12 @@
 from logging.config import fileConfig
 from sqlmodel import SQLModel
-from sqlalchemy import create_engine
 from alembic import context
 import sys
 import os
-from dotenv import load_dotenv
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src', 'config')))
 
-from src.config.database import DATABASE_URL
+from src.config.database import sync_engine
 
 
 # this is the Alembic Config object, which provides
@@ -44,9 +42,10 @@ def run_migrations_offline() -> None:
     script output.
     """
     
-    connectable = create_engine(DATABASE_URL)
+    # Use the sync engine for offline migrations
+    connectable = sync_engine
 
-    # Acquire a connection from the EnginB
+    # Acquire a connection from the Engine
     with connectable.connect() as connection:
         # Pass the connection to Alembic's migration context
         context.configure(connection=connection, target_metadata=target_metadata)
@@ -56,7 +55,9 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online():
-    connectable = create_engine(DATABASE_URL)
+    # Use the sync engine for online migrations
+    connectable = sync_engine
+    
     with connectable.connect() as connection:
         context.configure(
             connection=connection,

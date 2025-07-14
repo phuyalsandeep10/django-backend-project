@@ -1,6 +1,6 @@
 
 from typing import Optional
-from sqlmodel import SQLModel, Field,Relationship
+from sqlmodel import  Field,Relationship
 from datetime import datetime
 import sqlalchemy as sa
 from src.common.models import BaseModel

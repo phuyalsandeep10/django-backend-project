@@ -8,10 +8,9 @@ from src.common.dependencies import create_access_token
 from .dto import LoginDto, RegisterDto, VerifyEmailTokenDto,ForgotPasswordVerifyDto, VerifyEmailDto, ResetPasswordDto, RefreshTokenDto
 from .models import User, EmailVerification, RefreshToken
 
-from src.config.database import get_session, Session
+
 from src.common.utils import generate_numeric_token, compare_password, hash_password, generate_refresh_token
 from src.models import OrganizationInvitation
-from src.config.mail import mail_sender
 from src.tasks import send_verification_email, send_forgot_password_email
 from .social_auth import oauth
 from src.config.settings import settings
@@ -20,11 +19,11 @@ from src.config.settings import settings
 router = APIRouter()
 
 
-def create_token(user):
+async def create_token(user):
     token = create_access_token(data={"sub": user.email})
     refresh_token = generate_refresh_token()
 
-    RefreshToken.create(
+    await RefreshToken.create(
         user_id=user.id,
         token=refresh_token,
         active=True,
@@ -36,9 +35,9 @@ def create_token(user):
     return {"access_token": token, "refresh_token": refresh_token}
 
 @router.post("/login")
-def login(request: LoginDto):
+async def login(request: LoginDto):
     
-    user = User.find_one(where={
+    user = await User.find_one(where={
         "email":request.email
     })
 
@@ -58,10 +57,10 @@ def login(request: LoginDto):
 
 
 @router.post("/logout")
-def logout( user=Depends(get_current_user)):
-    # Invalidate the refresh token
+async def logout( user=Depends(get_current_user)):
 
-    token_data = RefreshToken.find_one(where={
+
+    token_data = await RefreshToken.find_one(where={
         "user_id":user.id,
         "active":True
     })
@@ -72,18 +71,12 @@ def logout( user=Depends(get_current_user)):
     # Mark the token as inactive
     RefreshToken.update(token_data.id,active=False)
 
-
-
-
-
-    
-
     return {"message": "Logged out successfully"}
 
 @router.post("/refresh-token")
-def refresh_token(body:RefreshTokenDto, session: Session = Depends(get_session)):
+async def refresh_token(body:RefreshTokenDto):
     # Validate the refresh token
-    token_data = RefreshToken.find_one(where={
+    token_data = await RefreshToken.find_one(where={
         "token":body.token,
         "active":True
     })
@@ -103,7 +96,7 @@ def refresh_token(body:RefreshTokenDto, session: Session = Depends(get_session))
 
     # Create a new access token
     try:
-        user = User.get(token_data.user_id)
+        user = await User.get(token_data.user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         access_token = create_access_token(data={"sub": user.email})
@@ -112,9 +105,9 @@ def refresh_token(body:RefreshTokenDto, session: Session = Depends(get_session))
         raise HTTPException(status_code=401, detail="Invalid token")
 
 @router.post("/register")
-def register(request: RegisterDto, session: Session = Depends(get_session)):
+async def register(request: RegisterDto):
    
-    user = User.find_one({
+    user = await User.find_one({
         "email":request.email
     })
    
@@ -129,7 +122,7 @@ def register(request: RegisterDto, session: Session = Depends(get_session)):
     token = generate_numeric_token(6)
     # Here you would typically send a verification email
 
-    EmailVerification.create(
+    await EmailVerification.create(
         user_id=user.id,
         token=token,
         is_used=False,
@@ -143,9 +136,9 @@ def register(request: RegisterDto, session: Session = Depends(get_session)):
     return {"message": "User registered successfully"}
 
 @router.get("/me")
-def get_auth_user(user=Depends(get_current_user), session: Session = Depends(get_session)):
+async def get_auth_user(user=Depends(get_current_user)):
     try:
-        user = User.get(user.id)
+        user = await User.get(user.id)
         del user.password  # Remove password from the response
         return user
     except jwt.JWTError:
@@ -153,10 +146,10 @@ def get_auth_user(user=Depends(get_current_user), session: Session = Depends(get
     
 
 @router.post("/verify-email")
-def verify_email_token(body:VerifyEmailTokenDto, session: Session = Depends(get_session)):
+async def verify_email_token(body:VerifyEmailTokenDto):
  
     
-    user = User.find_one({
+    user = await User.find_one({
             "email": body.email
         })
         
@@ -164,7 +157,7 @@ def verify_email_token(body:VerifyEmailTokenDto, session: Session = Depends(get_
         raise HTTPException(status_code=404, detail="User not found")
     
 
-    verification = EmailVerification.find_one({
+    verification = await EmailVerification.find_one({
         "token":body.token,
         "is_used":False,
         "user_id":user.id
@@ -181,18 +174,19 @@ def verify_email_token(body:VerifyEmailTokenDto, session: Session = Depends(get_
     if expires_at < datetime.utcnow():
         raise HTTPException(status_code=400, detail="Verification token has expired")
     # Mark the token as used
-    EmailVerification.update(verification.id, is_used=True)
+    await EmailVerification.update(verification.id, is_used=True)
     # Here you would typically update the user's email verification status
     User.update(user.id, email_verified_at=datetime.utcnow())
 
     return {"message": "Email verified successfully"}
 
 @router.post("/reset-password")
-def reset_password(body:ResetPasswordDto, user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+async def reset_password(body:ResetPasswordDto, user: User = Depends(get_current_user)):
  
-    user = User.find_one({
+    user = await User.find_one({
         "email":user.email
     })
+
     if not user:
         raise HTTPException(status_code=404, detail="Email not found")
     
@@ -204,14 +198,14 @@ def reset_password(body:ResetPasswordDto, user: User = Depends(get_current_user)
     # Update the user's password
     new_hashed_password = hash_password(body.new_password)
 
-    User.update(user.id, password=new_hashed_password)
+    await User.update(user.id, password=new_hashed_password)
     
     # Here you would typically send a reset link to the user's email
     return {"message": "Password reset successfully"}
 
 @router.post("/forgot-password-request")
-def forgot_password_request(body: VerifyEmailDto, session: Session = Depends(get_session)):
-    user = User.find_one({
+async def forgot_password_request(body: VerifyEmailDto):
+    user = await User.find_one({
         "email":body.email
     })
 
@@ -221,9 +215,7 @@ def forgot_password_request(body: VerifyEmailDto, session: Session = Depends(get
     # Generate a reset token (in a real application, you would send this to the user's email)
     token = generate_numeric_token(6)
 
-    # Store the token in the database (or send it via email)
-
-    EmailVerification.create(
+    await EmailVerification.create(
         user_id=user.id,
         token=token,
         is_used=False,
@@ -234,22 +226,20 @@ def forgot_password_request(body: VerifyEmailDto, session: Session = Depends(get
 
     
 
-    # For simplicity, we are just returning the token here
-   
-    # Here you would typically send a reset link to the user's email
+    
     return {"message": "Password reset link sent to your email"}
 
 @router.post("/forgot-password-verify")
-def forgot_password_verify(body:ForgotPasswordVerifyDto):
+async def forgot_password_verify(body:ForgotPasswordVerifyDto):
 
-    user = User.find_one({
+    user = await User.find_one({
         "email":body.email
     })
 
     if not user:
         raise HTTPException(status_code=404, detail="Email not found")
     
-    verification = EmailVerification.find_one({"token": body.token, "is_used": False, "user_id": user.id})
+    verification = await EmailVerification.find_one({"token": body.token, "is_used": False, "user_id": user.id})
 
 
     if not verification:
@@ -264,16 +254,16 @@ def forgot_password_verify(body:ForgotPasswordVerifyDto):
         raise HTTPException(status_code=400, detail="Verification token has expired")
     
     # Mark the token as used
-    EmailVerification.update(verification.id, is_used=True)
+    await EmailVerification.update(verification.id, is_used=True)
     # Update the user's password
 
-    User.update(user.id, password= hash_password(body.new_password))
+    await User.update(user.id, password= hash_password(body.new_password))
     return {"message": "Password reset successfully"}
 
 
 
 @router.get('/invitations')
-def get_invitations(user=Depends(get_current_user)):
+async def get_invitations(user=Depends(get_current_user)):
     return OrganizationInvitation.filter(where={
         "email":user.email
     })
@@ -297,7 +287,7 @@ async def auth(request: Request):
     email = userinfo.get('email')
     image = userinfo.get('picture')
 
-    user = User.find_one(where={
+    user = await User.find_one(where={
         "email":email
     })
     
