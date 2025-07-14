@@ -52,7 +52,7 @@ async def login(request: LoginDto):
 
 
 
-    return create_token(user)
+    return await create_token(user)
 
 
 
@@ -69,7 +69,7 @@ async def logout( user=Depends(get_current_user)):
     if not token_data:
         raise HTTPException(status_code=404, detail="No active refresh token found")
     # Mark the token as inactive
-    RefreshToken.update(token_data.id,active=False)
+    await RefreshToken.update(token_data.id,active=False)
 
     return {"message": "Logged out successfully"}
 
@@ -117,7 +117,7 @@ async def register(request: RegisterDto):
         raise HTTPException(status_code=400, detail="Email already registered")
     
     hashed_password =  hash_password(request.password)
-    user = User.create(email=request.email,name=request.name,password=hashed_password)
+    user = await User.create(email=request.email,name=request.name,password=hashed_password)
 
     token = generate_numeric_token(6)
     # Here you would typically send a verification email
@@ -176,7 +176,7 @@ async def verify_email_token(body:VerifyEmailTokenDto):
     # Mark the token as used
     await EmailVerification.update(verification.id, is_used=True)
     # Here you would typically update the user's email verification status
-    User.update(user.id, email_verified_at=datetime.utcnow())
+    await User.update(user.id, email_verified_at=datetime.utcnow())
 
     return {"message": "Email verified successfully"}
 
@@ -222,6 +222,7 @@ async def forgot_password_request(body: VerifyEmailDto):
         expires_at=(datetime.utcnow()+timedelta(hours=1)),
         type="forgot_password"
     )
+
     send_forgot_password_email.delay(email=body.email, token=token)
 
     
@@ -264,7 +265,7 @@ async def forgot_password_verify(body:ForgotPasswordVerifyDto):
 
 @router.get('/invitations')
 async def get_invitations(user=Depends(get_current_user)):
-    return OrganizationInvitation.filter(where={
+    return await OrganizationInvitation.filter(where={
         "email":user.email
     })
 
@@ -292,9 +293,9 @@ async def auth(request: Request):
     })
     
     if not user:
-        user = User.create(email=email,name=name,image=image,email_verified_at=datetime.utcnow(),password='')
+        user = await User.create(email=email,name=name,image=image,email_verified_at=datetime.utcnow(),password='')
     
-    tokens =  create_token(user)
+    tokens =await  create_token(user)
 
     redirect_url = f"{settings.FRONTEND_URL}/login?access_token={tokens.get('access_token')}&refresh_token={tokens.get('refresh_token')}"
 

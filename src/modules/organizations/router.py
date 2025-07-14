@@ -16,14 +16,14 @@ async def get_organizations(user=Depends(get_current_user)):
     """
     Get the list of organizations the user belongs to.
     """
-    return Organization.get_orgs_by_user_id(user_id=user.id)
+    return await Organization.get_orgs_by_user_id(user_id=user.id)
 
 @router.post("")
-def create_organization(body:OrganizationDto, user=Depends(get_current_user),token:str=Depends(get_bearer_token)):
+async def create_organization(body:OrganizationDto, user=Depends(get_current_user),token:str=Depends(get_bearer_token)):
     """
     Create a new organization.
     """
-    record = Organization.find_one(where={
+    record = await Organization.find_one(where={
         "name": {
             "mode":"insensitive",
             "value": body.name
@@ -37,7 +37,7 @@ def create_organization(body:OrganizationDto, user=Depends(get_current_user),tok
         raise HTTPException(status_code=400, detail="Organization with this name already exists")
     
 
-    organization = Organization.create(
+    organization = await Organization.create(
         name=body.name,
         description=body.description,
         slug=body.name.lower().replace(" ", "-"),  # Simple slug generation
@@ -45,7 +45,7 @@ def create_organization(body:OrganizationDto, user=Depends(get_current_user),tok
         website=body.website
     )
 
-    OrganizationMember.create(organization_id=organization.id,user_id=user.id,is_owner=True)
+    await OrganizationMember.create(organization_id=organization.id,user_id=user.id,is_owner=True)
     user_attributes = user.attributes
 
     if not user_attributes:
@@ -54,7 +54,7 @@ def create_organization(body:OrganizationDto, user=Depends(get_current_user),tok
     if 'organization_id' not in user_attributes:
        
 
-        user = User.update(user.id,
+        user = await User.update(user.id,
                        attributes={
                            "organization_id":organization.id
                        })
@@ -69,9 +69,9 @@ def create_organization(body:OrganizationDto, user=Depends(get_current_user),tok
 
 
 @router.get('/{organization_id}/members')
-def get_members(user=Depends(get_current_user)):
+async def get_members(user=Depends(get_current_user)):
     organization_id = user.attributes.get('organization_id')
-    members = OrganizationMember.filter({
+    members = await OrganizationMember.filter({
         "organization_id": organization_id,
     })
 
@@ -79,13 +79,13 @@ def get_members(user=Depends(get_current_user)):
     result = []
     for member in members:
         # Get all member_role entries for this member
-        member_roles = OrganizationMemberRole.filter({
+        member_roles = await OrganizationMemberRole.filter({
             "member_id": member.id
         })
         # Get role names
         roles = []
         for mr in member_roles:
-            role = OrganizationRole.get(mr.role_id)
+            role = await OrganizationRole.get(mr.role_id)
             if role:
                 roles.append({"id": role.id, "name": role.name})
         # Add roles to member dict
@@ -95,13 +95,13 @@ def get_members(user=Depends(get_current_user)):
     return result
 
 @router.put("/{organization_id}")
-def update_organization(organization_id: int, body: OrganizationDto, user=Depends(get_current_user)):
+async def update_organization(organization_id: int, body: OrganizationDto, user=Depends(get_current_user)):
     """
     Update an existing organization.
     """
-    organization = Organization.get(organization_id)
+    organization = await Organization.get(organization_id)
 
-    organization_member = OrganizationMember.find_one({
+    organization_member = await OrganizationMember.find_one({
         "organization_id": organization_id,
         "user_id": user.id
     })
@@ -113,14 +113,14 @@ def update_organization(organization_id: int, body: OrganizationDto, user=Depend
         raise HTTPException(status_code=404, detail="Organization not found")
 
     if organization.name != body.name:
-        existing_org = Organization.find_one({"name": {
+        existing_org = await Organization.find_one({"name": {
             "value":body.name,
             "mode":"insensitive"
         }})
         if existing_org:
             raise HTTPException(status_code=400, detail="Organization with this name already exists")
 
-    record = Organization.update(
+    record = await Organization.update(
         organization_id, 
         name= body.name,
         description= body.description,
@@ -138,14 +138,14 @@ def update_organization(organization_id: int, body: OrganizationDto, user=Depend
 
 
 @router.put("/{organization_id}/set")
-def set_organization(organization_id: int, user=Depends(get_current_user),token:str=Depends(get_bearer_token)):
+async def set_organization(organization_id: int, user=Depends(get_current_user),token:str=Depends(get_bearer_token)):
     """
     Set an existing organization.
     """
 
-    organization = Organization.get(organization_id)
+    organization = await Organization.get(organization_id)
 
-    user = User.update(user.id,
+    user = await User.update(user.id,
                        attributes={
                            "organization_id":organization_id
                        })
@@ -161,13 +161,13 @@ def set_organization(organization_id: int, user=Depends(get_current_user),token:
 
 
 @router.post('/roles')
-def create_role(body: OrganizationRoleDto, user=Depends(get_current_user)):
+async def create_role(body: OrganizationRoleDto, user=Depends(get_current_user)):
     """
     Create a new role for an organization.
     """ 
 
     organization_id = user.attributes.get("organization_id")
-    record = OrganizationRole.find_one(
+    record = await OrganizationRole.find_one(
         where={
             "name":{
                 "mode":"insensitive",
@@ -188,7 +188,7 @@ def create_role(body: OrganizationRoleDto, user=Depends(get_current_user)):
         
 
     
-    return OrganizationRole.create(
+    return await OrganizationRole.create(
         name=body.name,
         organization_id=organization_id,
         identifier=body.name.lower().replace(' ','-'),
@@ -197,18 +197,18 @@ def create_role(body: OrganizationRoleDto, user=Depends(get_current_user)):
         )
 
 @router.put('/roles/{role_id}')
-def update_role(role_id:int,body:OrganizationRoleDto,user=Depends(get_current_user)):
+async def update_role(role_id:int,body:OrganizationRoleDto,user=Depends(get_current_user)):
     """
     Update an existing role for an organization.
     """
 
-    organizationRole = OrganizationRole.get(role_id)
+    organizationRole = await OrganizationRole.get(role_id)
     organization_id = user.attributes.get("organization_id")
 
     if not organizationRole or organizationRole.organization_id != organization_id:
         raise HTTPException(status_code=404,detail="Not found")
     
-    record = OrganizationRole.find_one(where={
+    record = await OrganizationRole.find_one(where={
         "name":{
             "value":body.name,
             "mode":"insensitive"
@@ -219,7 +219,7 @@ def update_role(role_id:int,body:OrganizationRoleDto,user=Depends(get_current_us
         raise HTTPException(status_code=400,detail="Bad request")
     
 
-    role = OrganizationRole.get(role_id)
+    role = await OrganizationRole.get(role_id)
 
     if not role or role.organization_id != organization_id:
         raise HTTPException(status_code=404, detail="Role not found in your organization")
@@ -230,37 +230,37 @@ def update_role(role_id:int,body:OrganizationRoleDto,user=Depends(get_current_us
         permissions = list(set(body.permissions))
 
 
-    role = OrganizationRole.update(role.id,name=body.name,permissions=permissions, description=body.description)
+    role = await OrganizationRole.update(role.id,name=body.name,permissions=permissions, description=body.description)
 
     return role
 
 @router.get('/roles')
-def get_roles(user=Depends(get_current_user)):
+async def get_roles(user=Depends(get_current_user)):
     """
     Get all roles for the user's organization.
     """
     
-    organization_id = user.attributes.get("organization_id")
+    organization_id =  user.attributes.get("organization_id")
 
-    return OrganizationRole.filter(where={
+    return await OrganizationRole.filter(where={
         "organization_id":organization_id
     })
 
 
 @router.delete('/{role_id}/roles')
-def delete_role(role_id: int, user=Depends(get_current_user)):
+async def delete_role(role_id: int, user=Depends(get_current_user)):
     """
     Delete a role from the organization.
     """
     organization_id = user.attributes.get("organization_id")
 
 
-    role = OrganizationRole.get(role_id)
+    role = await OrganizationRole.get(role_id)
 
     if not role or role.organization_id != organization_id:
         raise HTTPException(status_code=404, detail="Role not found in your organization")
 
-    OrganizationRole.delete(role_id)
+    await OrganizationRole.delete(role_id)
     
     return {"message": "Role deleted successfully"}
 
@@ -268,8 +268,8 @@ def delete_role(role_id: int, user=Depends(get_current_user)):
 
 
 @router.post('/invitation')
-def invite_user(body:OrganizationInviteDto, user=Depends(get_current_user)):
-    record = OrganizationInvitation.find_one(where={
+async def invite_user(body:OrganizationInviteDto, user=Depends(get_current_user)):
+    record = await OrganizationInvitation.find_one(where={
         "email":body.email,
         "status":"pending"
     })
@@ -283,35 +283,35 @@ def invite_user(body:OrganizationInviteDto, user=Depends(get_current_user)):
         raise HTTPException(403,f"you can't invite your self.")
 
     
-    record = OrganizationInvitation.create(email=body.email,invited_by_id=user.id,status='pending',organization_id=organization_id, role_ids=body.role_ids)
+    record = await OrganizationInvitation.create(email=body.email,invited_by_id=user.id,status='pending',organization_id=organization_id, role_ids=body.role_ids)
 
     send_invitation_email.delay(email=body.email)
     return record
 
 @router.get('/invitation')
-def get_invitations(user=Depends(get_current_user)):
+async def get_invitations(user=Depends(get_current_user)):
     organization_id = user.attributes.get('organization_id')
     if not organization_id:
         raise HTTPException(403,'Not organization setup')
     
-    return OrganizationInvitation.filter(where={
+    return await OrganizationInvitation.filter(where={
         "organization_id":organization_id
     })
 
 
 
 @router.post('/invitation/{invitation_id}/reject')
-def reject_invitation(invitation_id:int,user=Depends(get_current_user)):
-    invitation = OrganizationInvitation.get(invitation_id)
+async def reject_invitation(invitation_id:int,user=Depends(get_current_user)):
+    invitation = await OrganizationInvitation.get(invitation_id)
     
     if not invitation:
         raise HTTPException(404,"Not found")
     
-    return OrganizationInvitation.update(invitation.id,status=InvitationStatus.REJECTED) 
+    return await OrganizationInvitation.update(invitation.id,status=InvitationStatus.REJECTED) 
 
 
 @router.post('/invitation/{invitation_id}/accept')
-def accept_invitation(invitation_id:int,user=Depends(get_current_user)):
+async def accept_invitation(invitation_id:int,user=Depends(get_current_user)):
 
     invitation = OrganizationInvitation.get(invitation_id)
 
@@ -340,10 +340,10 @@ def accept_invitation(invitation_id:int,user=Depends(get_current_user)):
     return {"message":"Successfully approved"}
 
 @router.post('/roles-assign')
-def assign_role(body:AssignRoleDto, user=Depends(get_current_user)):
+async def assign_role(body:AssignRoleDto, user=Depends(get_current_user)):
 
     organization_id = user.attributes.get('organization_id')
-    member = OrganizationMember.find_one(where={
+    member = await OrganizationMember.find_one(where={
         "organization_id":organization_id,
         "user_id":body.user_id
     })
@@ -351,13 +351,13 @@ def assign_role(body:AssignRoleDto, user=Depends(get_current_user)):
     if not member:
         raise HTTPException(400,"Organization Member not found")
 
-    member_role = OrganizationMemberRole.find_one(where={
+    member_role = await OrganizationMemberRole.find_one(where={
         "member_id":member.id,
         "role_id":body.role_id
     })
 
     if not member_role:
-        OrganizationMemberRole.create(role_id=body.role_id,member_id=member.id)
+       await OrganizationMemberRole.create(role_id=body.role_id,member_id=member.id)
 
     return {"message":"Successfully assign"}
 
@@ -365,10 +365,10 @@ def assign_role(body:AssignRoleDto, user=Depends(get_current_user)):
 
 
 @router.post('/remove-assign-role')
-def remove_assign_role(body:AssignRoleDto,user=Depends(get_current_user)):
+async def remove_assign_role(body:AssignRoleDto,user=Depends(get_current_user)):
     organization_id = user.attributes.get('organization_id')
 
-    member = OrganizationMember.find_one(where={
+    member = await OrganizationMember.find_one(where={
         "organization_id":organization_id,
         "user_id":body.user_id
     })
@@ -376,7 +376,7 @@ def remove_assign_role(body:AssignRoleDto,user=Depends(get_current_user)):
     if not member:
         raise HTTPException(400,"Organization Member not found")
     
-    member_role = OrganizationMemberRole.find_one({
+    member_role = await OrganizationMemberRole.find_one({
         "member_id":member.id,
         "role_id":body.role_id
     })
@@ -384,13 +384,13 @@ def remove_assign_role(body:AssignRoleDto,user=Depends(get_current_user)):
     if not member_role:
         raise HTTPException(400,'Role not found') 
     
-    OrganizationMemberRole.delete(member_role.id)
+    await OrganizationMemberRole.delete(member_role.id)
     return {"message":"Successfully remove role"}
 
 
 @router.get('/permissions')
-def get_permissions(user=Depends(get_current_user)):
-    return Permission.filter()
+async def get_permissions(user=Depends(get_current_user)):
+    return await Permission.filter()
 
 
 

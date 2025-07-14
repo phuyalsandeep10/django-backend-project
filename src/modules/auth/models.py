@@ -53,7 +53,7 @@ class RefreshToken(BaseModel, table=True):
     token: str = Field(unique=True, index=True)
     active: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
-    expires_at: Optional[str] = None  # Use appropriate datetime type 
+    expires_at: datetime = Field(nullable=False)
 
 class EmailVerification(BaseModel, table=True):
     __tablename__ = "email_verifications"
@@ -61,7 +61,7 @@ class EmailVerification(BaseModel, table=True):
     token: str = Field(unique=True, index=True)
     is_used: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
-    expires_at: Optional[str] = None  # Use appropriate datetime type if needed
+    expires_at: datetime = Field(nullable=True)  # Use appropriate datetime type if needed
     type:str = Field(default="email_verification")
 
 

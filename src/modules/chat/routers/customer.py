@@ -9,18 +9,18 @@ from src.models import Conversation, Customer
 router = APIRouter()
 
 @router.post("/{organizationId}")
-def create_customer(organizationId:int,request:Request):
+async def create_customer(organizationId:int,request:Request):
     header = request.headers.get("X-Forwarded-For")
     ip = header.split(",")[0].strip() if header else request.client.host
 
 
-    customer = Customer.create(
+    customer = await Customer.create(
         name=f"{ip}-customer",
         ip_address=ip,
         organization_id=organizationId
     )
 
-    conversation = Conversation.create(
+    conversation = await Conversation.create(
         name=f"{ip}-Conversation",
         customer_id=customer.id,
         ip_address = ip,
@@ -34,9 +34,9 @@ def create_customer(organizationId:int,request:Request):
 
 
 @router.get("")
-def get_customers(organizationId:int,user = Depends(get_current_user)):
+async def get_customers(organizationId:int,user = Depends(get_current_user)):
 
-    customers = Customer.filter(where={
+    customers = await Customer.filter(where={
         "organization_id": organizationId
     })
 

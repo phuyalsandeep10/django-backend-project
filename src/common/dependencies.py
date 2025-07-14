@@ -21,7 +21,7 @@ async def get_user_by_token(token: str):
             return user_cache[token]
         
         user_email: str = payload.get("sub") 
-        user = User.find_one(where={
+        user = await User.find_one(where={
             "email":user_email
         })
  
