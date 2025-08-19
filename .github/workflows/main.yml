@@ -86,6 +86,10 @@ jobs:
 
             # Go to the project directory where docker-compose.yml exists
             cd /home/ubuntu/chatboq-service
+
+            # Pull the latest code from Git
+             git pull origin main
+
             
             # Restart services using the .env file explicitly
             docker-compose --env-file .env down
