@@ -99,5 +99,3 @@ jobs:
             docker-compose --env-file .env exec -T backend python manage.py migrate
 
             
-            # Collect static files if needed
-            docker-compose --env-file .env exec -T backend python manage.py collectstatic --noinput
